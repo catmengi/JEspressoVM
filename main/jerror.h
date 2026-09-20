@@ -21,7 +21,7 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 
 typedef enum{
     JERR_OK,
-    JERR_OOM,
+    JERR_SCHEDULE, //Current interpreter instance exits back to scheduler
     JERR_BADPARAM,
     JERR_NOTFOUND,
     JERR_ORPHAN_RETURN,
@@ -31,6 +31,7 @@ typedef enum{
 
     //Exception-generating errors:
     JERR_NOCLASSDEF,
+    JERR_OOM,
     JERR_INVALIDMONITORSTATE,
     JERR_NULLPOINTER,
     JERR_NOSUCHFIELD,
@@ -49,6 +50,8 @@ typedef enum{
 }Error_t;
 
 #define __FSJ_DO_BREAK__
+
+#define FAIL_JUMP(expression, label) {if(!(expression)) {goto label;}}
 
 //This macro is not entriely means error, it might used for better looking error code propagation (JERR_SCHEDULE is one of the examples)
 #ifdef __FSJ_DO_BREAK__

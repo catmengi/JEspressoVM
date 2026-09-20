@@ -19,6 +19,7 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 
 #include "class.h"
 #include "config.h"
+#include "jstringpool.h"
 #include "parser.h"
 #include "stringpool.h"
 #include "interpreter.h"
@@ -38,9 +39,9 @@ void JEspresso_init(){
 
     stringpool_init();
     parser_init();
-    monitors_init();
     heap_init();
     classtable_init();
     classes_init();
     interpreter_init();
+    jstringpool_init();
 }

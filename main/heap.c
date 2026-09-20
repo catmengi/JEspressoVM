@@ -28,23 +28,16 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 #include "thread.h"
 #include "monitor.h"
 #include "memman.h"
+#include "jstringpool.h"
+
 
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 
-#ifdef TARGET_ESPIDF
-#include "freertos/freeRTOS.h"
-#include "freertos/sem.h"
-static SemaphoreHandle_t s_heap_lock = NULL;
-#else
-#include <pthread.h>
-static pthread_mutex_t s_heap_lock = {0};
-#endif
-
-static struct list_head s_gc_thread_list;
+static LIST_HEAD(s_gc_thread_list);
+static LIST_HEAD(s_gc_handle_list);
 static bump_allocator_t* s_arena = NULL;
-static bool is_initialised = false;
 
 static int value_type_size[] = {
     [TYPE_VOID] = 0,
@@ -56,130 +49,53 @@ static int value_type_size[] = {
     [TYPE_FLOAT] = sizeof(float),
     [TYPE_LONG] = sizeof(int64_t),
     [TYPE_DOUBLE] = sizeof(double),
-    [TYPE_REFERENCE] = sizeof(Object_t*),
+    [TYPE_REF] = sizeof(Object_t*),
 };
 
-static void heap_enter_critical(){
-    #ifdef TARGET_LINUX
-    pthread_mutex_lock(&s_heap_lock);
-    #else
-    xSemaphoreTakeRecursive(s_heap_lock, portMAX_DELAY);
-    #endif
-}
-
-static void heap_exit_critical(){
-    #ifdef TARGET_LINUX
-    pthread_mutex_unlock(&s_heap_lock);
-    #else
-    xSemaphoreGiveRecursive(s_heap_lock);
-    #endif    
-}
-
 void heap_init(){
-    INIT_LIST_HEAD(&s_gc_thread_list);
-    if(!is_initialised){
-
-        #ifdef TARGET_LINUX
-        pthread_mutexattr_t attr = {0};
-        pthread_mutexattr_init(&attr);
-        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-        pthread_mutex_init(&s_heap_lock, &attr);
-        #else
-        s_heap_lock = xSemaphoreCreateRecursiveMutex();
-        assert(s_heap_lock);
-        #endif
-    
-        assert((s_arena = memman_get(VM_GC_ARENA_ID)));
-        is_initialised = true;
-    } else bumper_reset(s_arena);
+    assert((s_arena = memman_get(VM_GC_ARENA_ID)));
+    bumper_reset(s_arena);
 }
 
-int heap_array_type_size(JavaValueType_t type){
+int heap_array_type_size(ValueType_t type){
     return value_type_size[type];
 }
 
-Error_t heap_class_object_alloc(Class_t* class, Object_t** output){
-    Error_t err = JERR_OK;
-    heap_enter_critical();
-
-    FAIL_SET_JUMP(class->flags.is_abstract == 0 && class->flags.is_interface == 0, err, JERR_TYPECHECK_FAILURE, exit);
-    FAIL_SET_JUMP(class->flags.is_array == 0, err, JERR_BADPARAM, exit);
-    FAIL_SET_JUMP(output, err, JERR_BADPARAM, exit);
-
+Object_t* heap_alloc_object(Class_t* class){
     if(sizeof(Object_t) + class->object_size > (bumper_size(s_arena) - bumper_used(s_arena))){
-        heap_exit_critical();
         heap_gc_start();
-        heap_enter_critical();
     }
 
     Object_t* object = NULL;
-    FAIL_SET_JUMP((object = bumper_calloc(s_arena, 1, sizeof(*object) + class->object_size)), err, JERR_OOM, exit);
+    FAIL_JUMP((object = bumper_calloc(s_arena, 1, sizeof(*object) + class->object_size)), exit);
 
     INIT_LIST_HEAD(&object->list);
     object->class = class;
     object->forward = 0;
     object->ident = rand();
 
-    *output = object;
-
 exit:
-    heap_exit_critical();
-    return err;
+    return object;
 }
 
-Error_t heap_array_object_alloc(Class_t* class, int32_t length, Object_t** output){
-    Error_t err = JERR_OK;
-    heap_enter_critical();
-
-    FAIL_SET_JUMP(class->flags.is_array == 1, err, JERR_BADPARAM, exit);
-    FAIL_SET_JUMP(output, err, JERR_BADPARAM, exit);
-    FAIL_SET_JUMP(length >= 0, err, JERR_BADPARAM, exit);
-
-    if(sizeof(Object_t) + sizeof(int32_t) + value_type_size[class->array_type] * length > (bumper_size(s_arena) - bumper_used(s_arena))){
-        heap_exit_critical();
+Object_t* heap_alloc_array(Class_t* class, uint32_t length){
+    size_t size = sizeof(Object_t) + sizeof(uint32_t) + ((uint64_t)length * heap_array_type_size(class->array_type));
+    if(size > (bumper_size(s_arena) - bumper_used(s_arena))){
         heap_gc_start();
-        heap_enter_critical();
     }
 
     Object_t* object = NULL;
-    FAIL_SET_JUMP((object = bumper_calloc(s_arena, 1, sizeof(*object) + sizeof(int32_t) + (value_type_size[class->array_type] * length))), err, JERR_OOM, exit);
+    FAIL_JUMP((object = bumper_calloc(s_arena, 1, size)), exit);
 
     INIT_LIST_HEAD(&object->list);
     object->class = class;
     object->forward = 0;
     object->ident = rand();
 
-    *(int32_t*)(((char*)object) + sizeof(*object)) = length;
-    *output = object;
+    *(uint32_t*)&object->fields[0] = length;
 
 exit:
-    heap_exit_critical();
-    return err;
-}
-
-Error_t heap_class_object_get_fields(Object_t* object, void** output){
-    if(!object) return JERR_NULLPOINTER;
-
-    *output = ((char*)object + sizeof(*object));
-    return JERR_OK;
-}
-
-Error_t heap_array_object_get_length(Object_t* object, int32_t* output){
-    if(!object) return JERR_NULLPOINTER;
-
-    *output = *(int32_t*)(((char*)object) + sizeof(*object));
-    return JERR_OK;
-}
-
-Error_t heap_array_object_get_elements(Object_t* object, void** output){
-    if(!object) return JERR_NULLPOINTER;
-    *output = (((char*)object) + sizeof(*object) + sizeof(int32_t));
-
-    return JERR_OK;
-}
-
-uint32_t heap_object_get_hashcode(Object_t* object){
-    return object->ident;
+    return object;
 }
 
 void heap_gc_thread_register(Thread_t* thread){
@@ -191,10 +107,19 @@ void heap_gc_thread_unregister(Thread_t* thread){
     list_del_init(&thread->gc_list);
 }
 
+void heap_gc_handle_register(ObjectJeNIHandle_t* handle){
+    INIT_LIST_HEAD(&handle->list);
+    list_add(&handle->list, &s_gc_handle_list);
+}
+
+void heap_gc_handle_unregister(ObjectJeNIHandle_t* handle){
+    list_del(&handle->list);
+}
+
 static void gc_scan_threads(struct list_head* output_list){
     Thread_t* thread = NULL;
     list_for_each_entry(thread, &s_gc_thread_list, gc_list){
-        for(InterpreterFrame_t* cur = thread->interpreter.frame; cur; cur = cur->prev){
+        for(InterpreterFrame_t* cur = thread->frame; cur; cur = cur->prev){
             for(unsigned i = 0; i < cur->sp; i++){
                 if(SHADOW_GET_REF(cur->shadow_stack, i)){
                     Object_t* object = (Object_t*)cur->stack[i];
@@ -217,7 +142,7 @@ static void gc_scan_threads(struct list_head* output_list){
                 }
             }
 
-            Monitor_t* monitor = NULL;
+            /*Monitor_t* monitor = NULL;
             list_for_each_entry(monitor, &cur->held_monitors, list){
                 Object_t* object = monitor->owner_object;
                 if(object && object->forward != GC_MARK_SENTINEL){
@@ -226,6 +151,7 @@ static void gc_scan_threads(struct list_head* output_list){
                     list_add_tail(&object->list, output_list);
                 }                
             }
+            */
         }  
     }
 }
@@ -239,17 +165,10 @@ static void gc_scan_classes(struct list_head* output_list){
         for(unsigned i = 0; i < CLASSTABLE_ENTRY_ITEMS_COUNT; i++){
             Class_t* class = entry->items[i];
             if(class){
-                Object_t* object = class->class_object;
-                if(object && object->forward != GC_MARK_SENTINEL){
-                    object->forward = GC_MARK_SENTINEL;
-                    INIT_LIST_HEAD(&object->list);
-                    list_add_tail(&object->list, output_list);
-                }
-
                 void* sfields_storage = class->sfields_storage;
                 for(unsigned i = 0; i < class->fields.count; i++){
                     Field_t* field = &class->fields.fields[i];
-                    if(field->flags.is_static && field->type == TYPE_REFERENCE){
+                    if(field->flags.is_static && field->type == TYPE_REF){
                         Object_t* object = *(Object_t**)(sfields_storage + field->offset);
                         if(object && object->forward != GC_MARK_SENTINEL){
                             object->forward = GC_MARK_SENTINEL;
@@ -275,17 +194,29 @@ static void gc_scan_classes(struct list_head* output_list){
     }
 }
 
-
 /*
 static void gc_scan_stringpool(struct list_head* output_list){
 }
 */
+
+static void gc_scan_handles(struct list_head* output_list){
+    ObjectJeNIHandle_t* handle = NULL;
+    list_for_each_entry(handle, &s_gc_handle_list, list){
+        if(handle->object && handle->object->forward != GC_MARK_SENTINEL){
+            handle->object->forward = GC_MARK_SENTINEL;
+            INIT_LIST_HEAD(&handle->object->list);
+            list_add_tail(&handle->object->list, output_list);            
+        }
+    }
+}
 
 static void gc_scan(){
     LIST_HEAD(root_list);
 
     gc_scan_classes(&root_list);
     gc_scan_threads(&root_list);
+    gc_scan_handles(&root_list);
+    gc_scan_stringpool(&root_list);
     //gc_scan_stringpool(&root_list);
 
     Object_t *object = NULL, *tmp = NULL;
@@ -300,7 +231,7 @@ static void gc_scan(){
                     for(unsigned i = 0; i < cur->fields.count; i++){
                         Field_t* field = &cur->fields.fields[i];
 
-                        if(!field->flags.is_static && field->type == TYPE_REFERENCE){
+                        if(!field->flags.is_static && field->type == TYPE_REF){
                             Object_t* found = (Object_t*)storage[field->offset];
                             if(found && found->forward != GC_MARK_SENTINEL){
                                 found->forward = GC_MARK_SENTINEL;
@@ -310,12 +241,9 @@ static void gc_scan(){
                         }
                     }
                 }
-            } else if(object->class->array_type == TYPE_REFERENCE){
-                int32_t length = 0;
-                Object_t** elements = NULL;
-
-                assert(heap_array_object_get_length(object, &length) == JERR_OK);
-                assert(heap_array_object_get_elements(object, (void**)&elements) == JERR_OK);
+            } else if(object->class->array_type == TYPE_REF){
+                int32_t length = OBJECT_ARRAY_LENGTH(object);
+                Object_t** elements = OBJECT_ARRAY_ELEMENTS(object, Object_t*);
 
                 for(unsigned i = 0; i < length; i++){
                     Object_t* found = elements[i];
@@ -341,8 +269,7 @@ static void* gc_calculate_forwards(struct list_head* live_list){
 
     while(scanner < heap_end){
         Object_t* object = scanner; //Can we trust that every data on heap arena is object?
-        size_t object_size = object->class->flags.is_array ? (value_type_size[object->class->array_type] * (*(int32_t*)(((char*)object) + sizeof(*object)))) + sizeof(int32_t) + sizeof(*object) 
-                                                           : object->class->object_size + sizeof(Object_t);
+        size_t object_size = object->class->flags.is_array ? OBJECT_ARRAY_SIZE(object) : object->class->object_size + sizeof(Object_t);
 
         if(object->forward == GC_MARK_SENTINEL){
             object->forward = bumper_alloc(&calculation_arena, object_size); //This DOES NOT modify heap contents, its not calloc!
@@ -351,7 +278,7 @@ static void* gc_calculate_forwards(struct list_head* live_list){
             INIT_LIST_HEAD(&object->list); //We need to resurect this list from the dead!
             list_add_tail(&object->list,live_list);
         } else {
-            monitor_free(object);
+            //monitor_free(object);
             //TODO: call finalize
         }
 
@@ -367,7 +294,7 @@ static void gc_patch(struct list_head* live_list){
     //Thread patching phase ====
     Thread_t* thread = NULL;
     list_for_each_entry(thread, &s_gc_thread_list, gc_list){
-        for(InterpreterFrame_t* cur = thread->interpreter.frame; cur; cur = cur->prev){
+        for(InterpreterFrame_t* cur = thread->frame; cur; cur = cur->prev){
             for(unsigned i = 0; i < cur->sp; i++){
                 if(SHADOW_GET_REF(cur->shadow_stack, i)){
                     Object_t* object = (Object_t*)cur->stack[i];
@@ -386,13 +313,14 @@ static void gc_patch(struct list_head* live_list){
                 }
             }
 
-            Monitor_t* monitor = NULL;
+            /*Monitor_t* monitor = NULL;
             list_for_each_entry(monitor, &cur->held_monitors, list){
                 Object_t* object = monitor->owner_object;
                 if(object && object->forward != GC_MARK_SENTINEL){
                     monitor->owner_object = object->forward;
                 }                
             }
+            */
         }
     } 
     //====================================
@@ -405,15 +333,10 @@ static void gc_patch(struct list_head* live_list){
         for(unsigned i = 0; i < CLASSTABLE_ENTRY_ITEMS_COUNT; i++){
             Class_t* class = entry->items[i];
             if(class){
-                Object_t* object = class->class_object;
-                if(object && object->forward != GC_MARK_SENTINEL){
-                    class->class_object = object->forward;
-                }
-
                 void* sfields_storage = class->sfields_storage;
                 for(unsigned i = 0; i < class->fields.count; i++){
                     Field_t* field = &class->fields.fields[i];
-                    if(field->flags.is_static && field->type == TYPE_REFERENCE){
+                    if(field->flags.is_static && field->type == TYPE_REF){
                         Object_t* object = *(Object_t**)(sfields_storage + field->offset);
                         if(object && object->forward != GC_MARK_SENTINEL){
                             *(Object_t**)(sfields_storage + field->offset) = object->forward;
@@ -444,7 +367,7 @@ static void gc_patch(struct list_head* live_list){
                 for(unsigned i = 0; i < cur->fields.count; i++){
                     Field_t* field = &cur->fields.fields[i];
 
-                    if(!field->flags.is_static && field->type == TYPE_REFERENCE){
+                    if(!field->flags.is_static && field->type == TYPE_REF){
                         Object_t* found = (Object_t*)storage[field->offset];
                         if(found && found->forward != GC_MARK_SENTINEL){
                             storage[field->offset] = (int32_t)found->forward;
@@ -452,12 +375,9 @@ static void gc_patch(struct list_head* live_list){
                     }
                 }
             }
-        } else if(object->class->array_type == TYPE_REFERENCE){
-            int32_t length = 0;
-            Object_t** elements = NULL;
-
-            assert(heap_array_object_get_length(object, &length) == JERR_OK);
-            assert(heap_array_object_get_elements(object, (void**)&elements) == JERR_OK);
+        } else if(object->class->array_type == TYPE_REF){
+            int32_t length = OBJECT_ARRAY_LENGTH(object);
+            Object_t** elements = OBJECT_ARRAY_ELEMENTS(object, Object_t*);
 
             for(unsigned i = 0; i < length; i++){
                 Object_t* found = elements[i];
@@ -467,29 +387,24 @@ static void gc_patch(struct list_head* live_list){
             }
         }
     }
-    //=====================
 
-    //Patch stringpool
-    /*
-    JavaStringPoolEntry_t* jstringpool = jstringpool_get_pool();
-    for(unsigned i = 0; i < JAVASTRINGPOOL_SIZE; i++){
-        JavaStringPoolEntry_t* entry = &jstringpool[i];
-
-        Object_t* object = entry->object;
-        if(object && object->forward != GC_MARK_SENTINEL){
-            entry->object = object->forward;
-        }           
+    //Handle patching
+    ObjectJeNIHandle_t* handle = NULL;
+    list_for_each_entry(handle, &s_gc_handle_list, list){
+        if(handle->object && handle->object->forward != GC_MARK_SENTINEL){
+            handle->object = handle->object->forward;
+        }
     }
-    */
-    //=====================
+    //=================
+
+    gc_patch_stringpool();
 }
 
 static void gc_move(struct list_head* live_list){
     Object_t *object = NULL, *tmp = NULL;
     list_for_each_entry_safe(object, tmp, live_list, list){
         list_del_init(&object->list);
-        size_t object_size = object->class->flags.is_array ? (value_type_size[object->class->array_type] * (*(int32_t*)(((char*)object) + sizeof(*object)))) + sizeof(int32_t) + sizeof(*object) 
-                                                           : object->class->object_size + sizeof(Object_t);
+        size_t object_size = object->class->flags.is_array ? OBJECT_ARRAY_SIZE(object) : object->class->object_size + sizeof(Object_t);
 
         void* move_to = (void*)object->forward;
         object->forward = 0;
@@ -500,19 +415,11 @@ static void gc_move(struct list_head* live_list){
     memset(s_arena->last_end, 0, bumper_size(s_arena) - bumper_used(s_arena));
 }
 
-extern void thread_notify_send(Thread_t* thread);
 void heap_gc_start(){
-    //thread_safepoint_check();
-    thread_safepoint_request();
-    heap_enter_critical();
-
     gc_scan();
 
     LIST_HEAD(live_list);
     s_arena->last_end = gc_calculate_forwards(&live_list);
     gc_patch(&live_list);
     gc_move(&live_list);
-
-    heap_exit_critical();
-    thread_safepoint_release();
 }

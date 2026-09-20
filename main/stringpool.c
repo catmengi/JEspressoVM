@@ -20,6 +20,7 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 #include "stringpool.h"
 #include "bumper.h"
 #include "config.h"
+#include "converter.h"
 #include "list.h"
 #include "memman.h"
 
@@ -32,18 +33,13 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 static bump_allocator_t* s_arena = NULL;
 
 static struct list_head s_entry_list = {0};
-static atomic_flag s_entry_list_guard = ATOMIC_FLAG_INIT;
 static size_t s_entry_count = 0;
-
-#define POOL_CRITICAL_ENTER(spinlock) ({while(atomic_flag_test_and_set(&(spinlock))){}})
-#define POOL_CRITICAL_EXIT(spinlock) atomic_flag_clear(&(spinlock))
 
 static StringpoolEntry_t* insert_entry();
 void stringpool_init(){
     assert((s_arena = memman_get(VM_PERMA_ARENA_ID)));
 
     INIT_LIST_HEAD(&s_entry_list);
-    s_entry_list_guard = (atomic_flag)ATOMIC_FLAG_INIT;
     s_entry_count = 0;
 
     assert(insert_entry());  //Add initial entry (other wise it wouldnt work)
@@ -95,8 +91,6 @@ static uint32_t djb2_hash(char *str) {
 int32_t stringpool_add(char* string){
     if(!string) return -1;
 
-    POOL_CRITICAL_ENTER(s_entry_list_guard);
-
     uint32_t nameid_offset = 0, n = 0;
     unsigned start_pos = djb2_hash(string) % STRINGPOOL_ENTRY_ITEMS_COUNT;
 
@@ -112,14 +106,11 @@ insert:
             if(item->cstr == NULL){
                 item->cstr = bumper_strdup(s_arena, string);
                 if(!item->cstr){
-                    POOL_CRITICAL_EXIT(s_entry_list_guard);
                     return -1;
                 }
 
-                POOL_CRITICAL_EXIT(s_entry_list_guard);
                 return index + nameid_offset;
             } else if(strcmp(item->cstr, string) == 0){
-                POOL_CRITICAL_EXIT(s_entry_list_guard);
                 return index + nameid_offset;
             }
         }
@@ -129,7 +120,6 @@ insert:
         if(++n == s_entry_count){ 
             StringpoolEntry_t* new = insert_entry();
             if(!new){
-                POOL_CRITICAL_EXIT(s_entry_list_guard);
                 return -1;
             } else {
                 entry = new; //goto go brrrrrrrr
@@ -138,51 +128,12 @@ insert:
         }
     }
 
-    POOL_CRITICAL_EXIT(s_entry_list_guard);
     return -1;
 }
 
 //THREAD SAFE
 char* stringpool_get(int32_t name_id){
-    POOL_CRITICAL_ENTER(s_entry_list_guard);
-
     StringpoolItem_t* item = find_slot(name_id);
-
-    POOL_CRITICAL_EXIT(s_entry_list_guard);
 
     return item ? item->cstr : NULL;
-}
-
-#include "class.h"
-#include "heap.h"
-#include "interpreter.h"
-
-Object_t* stringpool_get_java(Interpreter_t* ctx, int32_t name_id){
-    POOL_CRITICAL_ENTER(s_entry_list_guard);
-
-    StringpoolItem_t* item = find_slot(name_id);
-    assert(item && item->cstr);
-
-    Object_t* jstr = atomic_load(&item->jstr);
-    POOL_CRITICAL_EXIT(s_entry_list_guard);
-
-    if(!jstr){
-        Method_t* init = NULL;
-        Class_t* class = NULL;
-        FAIL_SET_JUMP(class_load_bynameid(stringpool_add("java/lang/String"), &class) == JERR_OK, jstr, NULL, exit);
-        FAIL_SET_JUMP(heap_class_object_alloc(class, &jstr) == JERR_OK, jstr, NULL, exit);
-
-        FAIL_SET_JUMP((init = class_find_method(class, stringpool_add("<init>@(I)V"))), jstr, NULL, exit); //TODO: java.lang.String support of name_id creating
-        FAIL_SET_JUMP(interpreter_method_invoke(ctx, init, (int32_t[2]){(uint32_t)jstr, name_id}, NULL) == JERR_OK, jstr, NULL, exit);
-
-        POOL_CRITICAL_ENTER(s_entry_list_guard);
-        if(!atomic_load(&item->jstr)){
-            atomic_store(&item->jstr, jstr);
-        } else jstr = atomic_load(&item->jstr);
-
-        POOL_CRITICAL_EXIT(s_entry_list_guard);
-    }
-    
-exit:
-    return jstr;
 }

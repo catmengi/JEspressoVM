@@ -1,0 +1,1640 @@
+Classfile /mnt/c/Users/catmengi/projects/JEspressoVM/main/java_src/deepseek_dhrystone$IntRef.class
+  Last modified Sep 20, 2026; size 297 bytes
+  MD5 checksum c42828bb7d62f7b1055c6aaf2b1607cb
+  Compiled from "deepseek_dhrystone.java"
+class deepseek_dhrystone$IntRef
+  minor version: 0
+  major version: 52
+  flags: ACC_SUPER
+Constant pool:
+   #1 = Methodref          #3.#12         // java/lang/Object."<init>":()V
+   #2 = Class              #14            // deepseek_dhrystone$IntRef
+   #3 = Class              #17            // java/lang/Object
+   #4 = Utf8               v
+   #5 = Utf8               I
+   #6 = Utf8               <init>
+   #7 = Utf8               ()V
+   #8 = Utf8               Code
+   #9 = Utf8               LineNumberTable
+  #10 = Utf8               SourceFile
+  #11 = Utf8               deepseek_dhrystone.java
+  #12 = NameAndType        #6:#7          // "<init>":()V
+  #13 = Class              #18            // deepseek_dhrystone
+  #14 = Utf8               deepseek_dhrystone$IntRef
+  #15 = Utf8               IntRef
+  #16 = Utf8               InnerClasses
+  #17 = Utf8               java/lang/Object
+  #18 = Utf8               deepseek_dhrystone
+{
+  int v;
+    descriptor: I
+    flags:
+
+  deepseek_dhrystone$IntRef();
+    descriptor: ()V
+    flags:
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 203: 0
+}
+SourceFile: "deepseek_dhrystone.java"
+InnerClasses:
+     static #15= #2 of #13; //IntRef=class deepseek_dhrystone$IntRef of class deepseek_dhrystone
+Classfile /mnt/c/Users/catmengi/projects/JEspressoVM/main/java_src/deepseek_dhrystone$Rec_Type.class
+  Last modified Sep 20, 2026; size 503 bytes
+  MD5 checksum 46987e6e4792822d42c8c0be653230ae
+  Compiled from "deepseek_dhrystone.java"
+class deepseek_dhrystone$Rec_Type
+  minor version: 0
+  major version: 52
+  flags: ACC_SUPER
+Constant pool:
+   #1 = Methodref          #3.#25         // java/lang/Object."<init>":()V
+   #2 = Class              #27            // deepseek_dhrystone$Rec_Type
+   #3 = Class              #28            // java/lang/Object
+   #4 = Utf8               Ptr_Comp
+   #5 = Utf8               Rec_Type
+   #6 = Utf8               InnerClasses
+   #7 = Utf8               Ldeepseek_dhrystone$Rec_Type;
+   #8 = Utf8               Discr
+   #9 = Utf8               I
+  #10 = Utf8               Enum_Comp
+  #11 = Utf8               Int_Comp
+  #12 = Utf8               Str_Comp
+  #13 = Utf8               [C
+  #14 = Utf8               E_Comp_2
+  #15 = Utf8               Str_2_Comp
+  #16 = Utf8               Ch_1_Comp
+  #17 = Utf8               C
+  #18 = Utf8               Ch_2_Comp
+  #19 = Utf8               <init>
+  #20 = Utf8               ()V
+  #21 = Utf8               Code
+  #22 = Utf8               LineNumberTable
+  #23 = Utf8               SourceFile
+  #24 = Utf8               deepseek_dhrystone.java
+  #25 = NameAndType        #19:#20        // "<init>":()V
+  #26 = Class              #29            // deepseek_dhrystone
+  #27 = Utf8               deepseek_dhrystone$Rec_Type
+  #28 = Utf8               java/lang/Object
+  #29 = Utf8               deepseek_dhrystone
+{
+  deepseek_dhrystone$Rec_Type Ptr_Comp;
+    descriptor: Ldeepseek_dhrystone$Rec_Type;
+    flags:
+
+  int Discr;
+    descriptor: I
+    flags:
+
+  int Enum_Comp;
+    descriptor: I
+    flags:
+
+  int Int_Comp;
+    descriptor: I
+    flags:
+
+  char[] Str_Comp;
+    descriptor: [C
+    flags:
+
+  int E_Comp_2;
+    descriptor: I
+    flags:
+
+  char[] Str_2_Comp;
+    descriptor: [C
+    flags:
+
+  char Ch_1_Comp;
+    descriptor: C
+    flags:
+
+  char Ch_2_Comp;
+    descriptor: C
+    flags:
+
+  deepseek_dhrystone$Rec_Type();
+    descriptor: ()V
+    flags:
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 3: 0
+}
+SourceFile: "deepseek_dhrystone.java"
+InnerClasses:
+     static #5= #2 of #26; //Rec_Type=class deepseek_dhrystone$Rec_Type of class deepseek_dhrystone
+Classfile /mnt/c/Users/catmengi/projects/JEspressoVM/main/java_src/deepseek_dhrystone$RefToRec.class
+  Last modified Sep 20, 2026; size 383 bytes
+  MD5 checksum eaa2f94cef60ab6cdfffcbbde3966bcd
+  Compiled from "deepseek_dhrystone.java"
+class deepseek_dhrystone$RefToRec
+  minor version: 0
+  major version: 52
+  flags: ACC_SUPER
+Constant pool:
+   #1 = Methodref          #3.#15         // java/lang/Object."<init>":()V
+   #2 = Class              #17            // deepseek_dhrystone$RefToRec
+   #3 = Class              #19            // java/lang/Object
+   #4 = Utf8               rec
+   #5 = Class              #20            // deepseek_dhrystone$Rec_Type
+   #6 = Utf8               Rec_Type
+   #7 = Utf8               InnerClasses
+   #8 = Utf8               Ldeepseek_dhrystone$Rec_Type;
+   #9 = Utf8               <init>
+  #10 = Utf8               ()V
+  #11 = Utf8               Code
+  #12 = Utf8               LineNumberTable
+  #13 = Utf8               SourceFile
+  #14 = Utf8               deepseek_dhrystone.java
+  #15 = NameAndType        #9:#10         // "<init>":()V
+  #16 = Class              #21            // deepseek_dhrystone
+  #17 = Utf8               deepseek_dhrystone$RefToRec
+  #18 = Utf8               RefToRec
+  #19 = Utf8               java/lang/Object
+  #20 = Utf8               deepseek_dhrystone$Rec_Type
+  #21 = Utf8               deepseek_dhrystone
+{
+  deepseek_dhrystone$Rec_Type rec;
+    descriptor: Ldeepseek_dhrystone$Rec_Type;
+    flags:
+
+  deepseek_dhrystone$RefToRec();
+    descriptor: ()V
+    flags:
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 204: 0
+}
+SourceFile: "deepseek_dhrystone.java"
+InnerClasses:
+     static #6= #5 of #16; //Rec_Type=class deepseek_dhrystone$Rec_Type of class deepseek_dhrystone
+     static #18= #2 of #16; //RefToRec=class deepseek_dhrystone$RefToRec of class deepseek_dhrystone
+Classfile /mnt/c/Users/catmengi/projects/JEspressoVM/main/java_src/deepseek_dhrystone.class
+  Last modified Sep 20, 2026; size 4564 bytes
+  MD5 checksum de931df06b3dffbda7d37414e8647a33
+  Compiled from "deepseek_dhrystone.java"
+public class deepseek_dhrystone
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+    #1 = Methodref          #43.#113      // java/lang/Object."<init>":()V
+    #2 = Fieldref           #16.#114      // deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+    #3 = Fieldref           #16.#115      // deepseek_dhrystone$Rec_Type.Int_Comp:I
+    #4 = Fieldref           #16.#116      // deepseek_dhrystone$Rec_Type.Discr:I
+    #5 = Fieldref           #16.#117      // deepseek_dhrystone$Rec_Type.Enum_Comp:I
+    #6 = Methodref          #10.#118      // deepseek_dhrystone.Proc_6:(ILdeepseek_dhrystone$Rec_Type;)V
+    #7 = Methodref          #10.#119      // deepseek_dhrystone.Proc_7:(IILdeepseek_dhrystone$Rec_Type;)V
+    #8 = Fieldref           #18.#120      // deepseek_dhrystone$IntRef.v:I
+    #9 = Fieldref           #10.#121      // deepseek_dhrystone.Int_Glob:I
+   #10 = Class              #122          // deepseek_dhrystone
+   #11 = Fieldref           #20.#123      // deepseek_dhrystone$RefToRec.rec:Ldeepseek_dhrystone$Rec_Type;
+   #12 = Fieldref           #10.#124      // deepseek_dhrystone.Ch_1_Glob:C
+   #13 = Fieldref           #10.#125      // deepseek_dhrystone.Bool_Glob:Z
+   #14 = Fieldref           #10.#126      // deepseek_dhrystone.Ch_2_Glob:C
+   #15 = Methodref          #10.#127      // deepseek_dhrystone.Func_1:([C[C)I
+   #16 = Class              #128          // deepseek_dhrystone$Rec_Type
+   #17 = Methodref          #16.#113      // deepseek_dhrystone$Rec_Type."<init>":()V
+   #18 = Class              #129          // deepseek_dhrystone$IntRef
+   #19 = Methodref          #18.#113      // deepseek_dhrystone$IntRef."<init>":()V
+   #20 = Class              #130          // deepseek_dhrystone$RefToRec
+   #21 = Methodref          #20.#113      // deepseek_dhrystone$RefToRec."<init>":()V
+   #22 = Integer            100000
+   #23 = Methodref          #10.#131      // deepseek_dhrystone.mkstr:(CI)[C
+   #24 = Fieldref           #16.#132      // deepseek_dhrystone$Rec_Type.Str_Comp:[C
+   #25 = Fieldref           #16.#133      // deepseek_dhrystone$Rec_Type.E_Comp_2:I
+   #26 = Fieldref           #16.#134      // deepseek_dhrystone$Rec_Type.Str_2_Comp:[C
+   #27 = Fieldref           #16.#135      // deepseek_dhrystone$Rec_Type.Ch_1_Comp:C
+   #28 = Fieldref           #16.#136      // deepseek_dhrystone$Rec_Type.Ch_2_Comp:C
+   #29 = Methodref          #10.#137      // deepseek_dhrystone.Proc_5:()V
+   #30 = Methodref          #10.#138      // deepseek_dhrystone.Proc_4:()V
+   #31 = Methodref          #10.#139      // deepseek_dhrystone.Proc_3:(Ldeepseek_dhrystone$RefToRec;)V
+   #32 = Fieldref           #10.#140      // deepseek_dhrystone.Arr_1_Glob:[I
+   #33 = Fieldref           #10.#141      // deepseek_dhrystone.Arr_2_Glob:[[I
+   #34 = Methodref          #10.#142      // deepseek_dhrystone.Proc_8:([I[[III)V
+   #35 = Methodref          #10.#143      // deepseek_dhrystone.Proc_1:(Ldeepseek_dhrystone$Rec_Type;)V
+   #36 = Methodref          #10.#144      // deepseek_dhrystone.Func_3:(I)Z
+   #37 = Methodref          #10.#145      // deepseek_dhrystone.Func_2:([C[C)Z
+   #38 = Methodref          #10.#146      // deepseek_dhrystone.Proc_2:(Ldeepseek_dhrystone$IntRef;)V
+   #39 = Fieldref           #10.#147      // deepseek_dhrystone.Sink:I
+   #40 = Class              #69           // "[[I"
+   #41 = Fieldref           #10.#148      // deepseek_dhrystone.STR_A:[C
+   #42 = Fieldref           #10.#149      // deepseek_dhrystone.STR_B:[C
+   #43 = Class              #150          // java/lang/Object
+   #44 = Utf8               RefToRec
+   #45 = Utf8               InnerClasses
+   #46 = Utf8               IntRef
+   #47 = Utf8               Rec_Type
+   #48 = Utf8               Ident_1
+   #49 = Utf8               I
+   #50 = Utf8               ConstantValue
+   #51 = Integer            0
+   #52 = Utf8               Ident_2
+   #53 = Integer            1
+   #54 = Utf8               Ident_3
+   #55 = Integer            2
+   #56 = Utf8               Ident_4
+   #57 = Integer            3
+   #58 = Utf8               Ident_5
+   #59 = Integer            4
+   #60 = Utf8               Int_Glob
+   #61 = Utf8               Bool_Glob
+   #62 = Utf8               Z
+   #63 = Utf8               Ch_1_Glob
+   #64 = Utf8               C
+   #65 = Utf8               Ch_2_Glob
+   #66 = Utf8               Arr_1_Glob
+   #67 = Utf8               [I
+   #68 = Utf8               Arr_2_Glob
+   #69 = Utf8               [[I
+   #70 = Utf8               Sink
+   #71 = Utf8               STR_A
+   #72 = Utf8               [C
+   #73 = Utf8               STR_B
+   #74 = Utf8               <init>
+   #75 = Utf8               ()V
+   #76 = Utf8               Code
+   #77 = Utf8               LineNumberTable
+   #78 = Utf8               copy31
+   #79 = Utf8               ([C[C)V
+   #80 = Utf8               StackMapTable
+   #81 = Utf8               eq31
+   #82 = Utf8               ([C[C)Z
+   #83 = Utf8               mkstr
+   #84 = Utf8               (CI)[C
+   #85 = Class              #72           // "[C"
+   #86 = Utf8               Proc_1
+   #87 = Utf8               (Ldeepseek_dhrystone$Rec_Type;)V
+   #88 = Class              #128          // deepseek_dhrystone$Rec_Type
+   #89 = Utf8               Proc_2
+   #90 = Utf8               (Ldeepseek_dhrystone$IntRef;)V
+   #91 = Class              #129          // deepseek_dhrystone$IntRef
+   #92 = Utf8               Proc_3
+   #93 = Utf8               (Ldeepseek_dhrystone$RefToRec;)V
+   #94 = Utf8               Proc_4
+   #95 = Utf8               Proc_5
+   #96 = Utf8               Proc_6
+   #97 = Utf8               (ILdeepseek_dhrystone$Rec_Type;)V
+   #98 = Utf8               Proc_7
+   #99 = Utf8               (IILdeepseek_dhrystone$Rec_Type;)V
+  #100 = Utf8               Proc_8
+  #101 = Utf8               ([I[[III)V
+  #102 = Utf8               Func_1
+  #103 = Utf8               ([C[C)I
+  #104 = Utf8               Func_2
+  #105 = Utf8               Func_3
+  #106 = Utf8               (I)Z
+  #107 = Utf8               run
+  #108 = Utf8               ()I
+  #109 = Class              #130          // deepseek_dhrystone$RefToRec
+  #110 = Utf8               <clinit>
+  #111 = Utf8               SourceFile
+  #112 = Utf8               deepseek_dhrystone.java
+  #113 = NameAndType        #74:#75       // "<init>":()V
+  #114 = NameAndType        #151:#152     // Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+  #115 = NameAndType        #153:#49      // Int_Comp:I
+  #116 = NameAndType        #154:#49      // Discr:I
+  #117 = NameAndType        #155:#49      // Enum_Comp:I
+  #118 = NameAndType        #96:#97       // Proc_6:(ILdeepseek_dhrystone$Rec_Type;)V
+  #119 = NameAndType        #98:#99       // Proc_7:(IILdeepseek_dhrystone$Rec_Type;)V
+  #120 = NameAndType        #156:#49      // v:I
+  #121 = NameAndType        #60:#49       // Int_Glob:I
+  #122 = Utf8               deepseek_dhrystone
+  #123 = NameAndType        #157:#152     // rec:Ldeepseek_dhrystone$Rec_Type;
+  #124 = NameAndType        #63:#64       // Ch_1_Glob:C
+  #125 = NameAndType        #61:#62       // Bool_Glob:Z
+  #126 = NameAndType        #65:#64       // Ch_2_Glob:C
+  #127 = NameAndType        #102:#103     // Func_1:([C[C)I
+  #128 = Utf8               deepseek_dhrystone$Rec_Type
+  #129 = Utf8               deepseek_dhrystone$IntRef
+  #130 = Utf8               deepseek_dhrystone$RefToRec
+  #131 = NameAndType        #83:#84       // mkstr:(CI)[C
+  #132 = NameAndType        #158:#72      // Str_Comp:[C
+  #133 = NameAndType        #159:#49      // E_Comp_2:I
+  #134 = NameAndType        #160:#72      // Str_2_Comp:[C
+  #135 = NameAndType        #161:#64      // Ch_1_Comp:C
+  #136 = NameAndType        #162:#64      // Ch_2_Comp:C
+  #137 = NameAndType        #95:#75       // Proc_5:()V
+  #138 = NameAndType        #94:#75       // Proc_4:()V
+  #139 = NameAndType        #92:#93       // Proc_3:(Ldeepseek_dhrystone$RefToRec;)V
+  #140 = NameAndType        #66:#67       // Arr_1_Glob:[I
+  #141 = NameAndType        #68:#69       // Arr_2_Glob:[[I
+  #142 = NameAndType        #100:#101     // Proc_8:([I[[III)V
+  #143 = NameAndType        #86:#87       // Proc_1:(Ldeepseek_dhrystone$Rec_Type;)V
+  #144 = NameAndType        #105:#106     // Func_3:(I)Z
+  #145 = NameAndType        #104:#82      // Func_2:([C[C)Z
+  #146 = NameAndType        #89:#90       // Proc_2:(Ldeepseek_dhrystone$IntRef;)V
+  #147 = NameAndType        #70:#49       // Sink:I
+  #148 = NameAndType        #71:#72       // STR_A:[C
+  #149 = NameAndType        #73:#72       // STR_B:[C
+  #150 = Utf8               java/lang/Object
+  #151 = Utf8               Ptr_Comp
+  #152 = Utf8               Ldeepseek_dhrystone$Rec_Type;
+  #153 = Utf8               Int_Comp
+  #154 = Utf8               Discr
+  #155 = Utf8               Enum_Comp
+  #156 = Utf8               v
+  #157 = Utf8               rec
+  #158 = Utf8               Str_Comp
+  #159 = Utf8               E_Comp_2
+  #160 = Utf8               Str_2_Comp
+  #161 = Utf8               Ch_1_Comp
+  #162 = Utf8               Ch_2_Comp
+{
+  static final int Ident_1;
+    descriptor: I
+    flags: ACC_STATIC, ACC_FINAL
+    ConstantValue: int 0
+
+  static final int Ident_2;
+    descriptor: I
+    flags: ACC_STATIC, ACC_FINAL
+    ConstantValue: int 1
+
+  static final int Ident_3;
+    descriptor: I
+    flags: ACC_STATIC, ACC_FINAL
+    ConstantValue: int 2
+
+  static final int Ident_4;
+    descriptor: I
+    flags: ACC_STATIC, ACC_FINAL
+    ConstantValue: int 3
+
+  static final int Ident_5;
+    descriptor: I
+    flags: ACC_STATIC, ACC_FINAL
+    ConstantValue: int 4
+
+  static int Int_Glob;
+    descriptor: I
+    flags: ACC_STATIC
+
+  static boolean Bool_Glob;
+    descriptor: Z
+    flags: ACC_STATIC
+
+  static char Ch_1_Glob;
+    descriptor: C
+    flags: ACC_STATIC
+
+  static char Ch_2_Glob;
+    descriptor: C
+    flags: ACC_STATIC
+
+  static int[] Arr_1_Glob;
+    descriptor: [I
+    flags: ACC_STATIC
+
+  static int[][] Arr_2_Glob;
+    descriptor: [[I
+    flags: ACC_STATIC
+
+  static int Sink;
+    descriptor: I
+    flags: ACC_STATIC
+
+  static final char[] STR_A;
+    descriptor: [C
+    flags: ACC_STATIC, ACC_FINAL
+
+  static final char[] STR_B;
+    descriptor: [C
+    flags: ACC_STATIC, ACC_FINAL
+
+  public deepseek_dhrystone();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 1: 0
+
+  static void copy31(char[], char[]);
+    descriptor: ([C[C)V
+    flags: ACC_STATIC
+    Code:
+      stack=4, locals=3, args_size=2
+         0: iconst_0
+         1: istore_2
+         2: iload_2
+         3: bipush        31
+         5: if_icmpge     20
+         8: aload_0
+         9: iload_2
+        10: aload_1
+        11: iload_2
+        12: caload
+        13: castore
+        14: iinc          2, 1
+        17: goto          2
+        20: return
+      LineNumberTable:
+        line 35: 0
+        line 36: 20
+      StackMapTable: number_of_entries = 2
+        frame_type = 252 /* append */
+          offset_delta = 2
+          locals = [ int ]
+        frame_type = 17 /* same */
+
+  static boolean eq31(char[], char[]);
+    descriptor: ([C[C)Z
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=3, args_size=2
+         0: iconst_0
+         1: istore_2
+         2: iload_2
+         3: bipush        31
+         5: if_icmpge     25
+         8: aload_0
+         9: iload_2
+        10: caload
+        11: aload_1
+        12: iload_2
+        13: caload
+        14: if_icmpeq     19
+        17: iconst_0
+        18: ireturn
+        19: iinc          2, 1
+        22: goto          2
+        25: iconst_1
+        26: ireturn
+      LineNumberTable:
+        line 40: 0
+        line 41: 8
+        line 40: 19
+        line 43: 25
+      StackMapTable: number_of_entries = 3
+        frame_type = 252 /* append */
+          offset_delta = 2
+          locals = [ int ]
+        frame_type = 16 /* same */
+        frame_type = 5 /* same */
+
+  static char[] mkstr(char, int);
+    descriptor: (CI)[C
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=4, args_size=2
+         0: iload_1
+         1: newarray       char
+         3: astore_2
+         4: iconst_0
+         5: istore_3
+         6: iload_3
+         7: iload_1
+         8: if_icmpge     21
+        11: aload_2
+        12: iload_3
+        13: iload_0
+        14: castore
+        15: iinc          3, 1
+        18: goto          6
+        21: aload_2
+        22: areturn
+      LineNumberTable:
+        line 47: 0
+        line 49: 4
+        line 50: 21
+      StackMapTable: number_of_entries = 2
+        frame_type = 253 /* append */
+          offset_delta = 6
+          locals = [ class "[C", int ]
+        frame_type = 14 /* same */
+
+  static void Proc_1(deepseek_dhrystone$Rec_Type);
+    descriptor: (Ldeepseek_dhrystone$Rec_Type;)V
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=2, args_size=1
+         0: aload_0
+         1: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+         4: astore_1
+         5: aload_0
+         6: aload_1
+         7: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+        10: putfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+        13: aload_1
+        14: aload_0
+        15: putfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+        18: aload_1
+        19: iconst_5
+        20: putfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+        23: aload_1
+        24: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+        27: astore_1
+        28: aload_1
+        29: getfield      #4                  // Field deepseek_dhrystone$Rec_Type.Discr:I
+        32: ifne          67
+        35: aload_1
+        36: bipush        6
+        38: putfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+        41: aload_0
+        42: getfield      #5                  // Field deepseek_dhrystone$Rec_Type.Enum_Comp:I
+        45: aload_1
+        46: invokestatic  #6                  // Method Proc_6:(ILdeepseek_dhrystone$Rec_Type;)V
+        49: aload_0
+        50: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+        53: astore_1
+        54: aload_1
+        55: getfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+        58: bipush        10
+        60: aload_1
+        61: invokestatic  #7                  // Method Proc_7:(IILdeepseek_dhrystone$Rec_Type;)V
+        64: goto          72
+        67: aload_0
+        68: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+        71: astore_0
+        72: return
+      LineNumberTable:
+        line 55: 0
+        line 57: 5
+        line 58: 13
+        line 59: 18
+        line 61: 23
+        line 62: 28
+        line 63: 35
+        line 64: 41
+        line 65: 49
+        line 66: 54
+        line 68: 67
+        line 70: 72
+      StackMapTable: number_of_entries = 2
+        frame_type = 252 /* append */
+          offset_delta = 67
+          locals = [ class deepseek_dhrystone$Rec_Type ]
+        frame_type = 4 /* same */
+
+  static void Proc_2(deepseek_dhrystone$IntRef);
+    descriptor: (Ldeepseek_dhrystone$IntRef;)V
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=4, args_size=1
+         0: aload_0
+         1: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+         4: bipush        10
+         6: iadd
+         7: istore_1
+         8: iconst_0
+         9: istore_3
+        10: iload_3
+        11: ifne          19
+        14: iconst_0
+        15: istore_2
+        16: goto          21
+        19: iconst_1
+        20: istore_2
+        21: iload_2
+        22: ifeq          60
+        25: iload_1
+        26: getstatic     #9                  // Field Int_Glob:I
+        29: if_icmple     46
+        32: iinc          1, -1
+        35: aload_0
+        36: iload_1
+        37: getstatic     #9                  // Field Int_Glob:I
+        40: isub
+        41: putfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+        44: iconst_0
+        45: istore_3
+        46: iload_3
+        47: ifne          55
+        50: iconst_0
+        51: istore_2
+        52: goto          21
+        55: iconst_0
+        56: istore_2
+        57: goto          21
+        60: return
+      LineNumberTable:
+        line 74: 0
+        line 76: 8
+        line 78: 10
+        line 79: 19
+        line 81: 21
+        line 82: 25
+        line 83: 32
+        line 84: 35
+        line 85: 44
+        line 87: 46
+        line 88: 55
+        line 90: 60
+      StackMapTable: number_of_entries = 5
+        frame_type = 254 /* append */
+          offset_delta = 19
+          locals = [ int, top, int ]
+        frame_type = 255 /* full_frame */
+          offset_delta = 1
+          locals = [ class deepseek_dhrystone$IntRef, int, int, int ]
+          stack = []
+        frame_type = 24 /* same */
+        frame_type = 8 /* same */
+        frame_type = 4 /* same */
+
+  static void Proc_3(deepseek_dhrystone$RefToRec);
+    descriptor: (Ldeepseek_dhrystone$RefToRec;)V
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #11                 // Field deepseek_dhrystone$RefToRec.rec:Ldeepseek_dhrystone$Rec_Type;
+         4: ifnull        33
+         7: aload_0
+         8: getfield      #11                 // Field deepseek_dhrystone$RefToRec.rec:Ldeepseek_dhrystone$Rec_Type;
+        11: getstatic     #9                  // Field Int_Glob:I
+        14: putfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+        17: aload_0
+        18: getfield      #11                 // Field deepseek_dhrystone$RefToRec.rec:Ldeepseek_dhrystone$Rec_Type;
+        21: getfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+        24: bipush        10
+        26: aload_0
+        27: getfield      #11                 // Field deepseek_dhrystone$RefToRec.rec:Ldeepseek_dhrystone$Rec_Type;
+        30: invokestatic  #7                  // Method Proc_7:(IILdeepseek_dhrystone$Rec_Type;)V
+        33: return
+      LineNumberTable:
+        line 94: 0
+        line 95: 7
+        line 96: 17
+        line 98: 33
+      StackMapTable: number_of_entries = 1
+        frame_type = 33 /* same */
+
+  static void Proc_4();
+    descriptor: ()V
+    flags: ACC_STATIC
+    Code:
+      stack=2, locals=1, args_size=0
+         0: getstatic     #12                 // Field Ch_1_Glob:C
+         3: bipush        65
+         5: if_icmpne     12
+         8: iconst_1
+         9: goto          13
+        12: iconst_0
+        13: istore_0
+        14: iload_0
+        15: getstatic     #13                 // Field Bool_Glob:Z
+        18: ior
+        19: putstatic     #13                 // Field Bool_Glob:Z
+        22: bipush        66
+        24: putstatic     #14                 // Field Ch_2_Glob:C
+        27: return
+      LineNumberTable:
+        line 102: 0
+        line 103: 14
+        line 104: 22
+        line 105: 27
+      StackMapTable: number_of_entries = 2
+        frame_type = 12 /* same */
+        frame_type = 64 /* same_locals_1_stack_item */
+          stack = [ int ]
+
+  static void Proc_5();
+    descriptor: ()V
+    flags: ACC_STATIC
+    Code:
+      stack=1, locals=0, args_size=0
+         0: bipush        65
+         2: putstatic     #12                 // Field Ch_1_Glob:C
+         5: iconst_0
+         6: putstatic     #13                 // Field Bool_Glob:Z
+         9: return
+      LineNumberTable:
+        line 109: 0
+        line 110: 5
+        line 111: 9
+
+  static void Proc_6(int, deepseek_dhrystone$Rec_Type);
+    descriptor: (ILdeepseek_dhrystone$Rec_Type;)V
+    flags: ACC_STATIC
+    Code:
+      stack=2, locals=2, args_size=2
+         0: aload_1
+         1: iload_0
+         2: putfield      #5                  // Field deepseek_dhrystone$Rec_Type.Enum_Comp:I
+         5: iload_0
+         6: iconst_2
+         7: if_icmpne     11
+        10: return
+        11: iload_0
+        12: iconst_2
+        13: if_icmpge     33
+        16: iload_0
+        17: ifne          21
+        20: return
+        21: iload_0
+        22: iconst_1
+        23: if_icmpne     27
+        26: return
+        27: iload_0
+        28: iconst_3
+        29: if_icmpne     39
+        32: return
+        33: iload_0
+        34: iconst_4
+        35: if_icmpne     39
+        38: return
+        39: return
+      LineNumberTable:
+        line 115: 0
+        line 116: 5
+        line 118: 11
+        line 119: 16
+        line 120: 21
+        line 121: 27
+        line 123: 33
+        line 125: 39
+      StackMapTable: number_of_entries = 5
+        frame_type = 11 /* same */
+        frame_type = 9 /* same */
+        frame_type = 5 /* same */
+        frame_type = 5 /* same */
+        frame_type = 5 /* same */
+
+  static void Proc_7(int, int, deepseek_dhrystone$Rec_Type);
+    descriptor: (IILdeepseek_dhrystone$Rec_Type;)V
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=4, args_size=3
+         0: iload_0
+         1: iconst_2
+         2: iadd
+         3: istore_3
+         4: aload_2
+         5: iload_1
+         6: iload_3
+         7: iadd
+         8: putfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+        11: return
+      LineNumberTable:
+        line 129: 0
+        line 130: 4
+        line 131: 11
+
+  static void Proc_8(int[], int[][], int, int);
+    descriptor: ([I[[III)V
+    flags: ACC_STATIC
+    Code:
+      stack=4, locals=6, args_size=4
+         0: iload_2
+         1: iconst_5
+         2: iadd
+         3: istore        5
+         5: aload_0
+         6: iload         5
+         8: iload_3
+         9: iastore
+        10: aload_0
+        11: iload         5
+        13: iconst_1
+        14: iadd
+        15: aload_0
+        16: iload         5
+        18: iaload
+        19: iastore
+        20: aload_0
+        21: iload         5
+        23: bipush        30
+        25: iadd
+        26: iload         5
+        28: iastore
+        29: iload         5
+        31: istore        4
+        33: iload         4
+        35: iload         5
+        37: iconst_1
+        38: iadd
+        39: if_icmpgt     79
+        42: aload_1
+        43: iload         5
+        45: aaload
+        46: iload         4
+        48: iload         5
+        50: iastore
+        51: aload_1
+        52: iload         5
+        54: iconst_1
+        55: iadd
+        56: aaload
+        57: iload         4
+        59: iload         5
+        61: iastore
+        62: aload_1
+        63: iload         5
+        65: iconst_2
+        66: iadd
+        67: aaload
+        68: iload         4
+        70: iload         5
+        72: iastore
+        73: iinc          4, 1
+        76: goto          33
+        79: aload_1
+        80: iload         5
+        82: aaload
+        83: iload         5
+        85: iconst_1
+        86: isub
+        87: dup2
+        88: iaload
+        89: iconst_1
+        90: iadd
+        91: iastore
+        92: aload_1
+        93: iload         5
+        95: bipush        20
+        97: iadd
+        98: aaload
+        99: iload         5
+       101: aload_0
+       102: iload         5
+       104: iaload
+       105: iastore
+       106: iconst_5
+       107: putstatic     #9                  // Field Int_Glob:I
+       110: return
+      LineNumberTable:
+        line 139: 0
+        line 140: 5
+        line 141: 10
+        line 142: 20
+        line 144: 29
+        line 145: 42
+        line 146: 51
+        line 147: 62
+        line 144: 73
+        line 150: 79
+        line 151: 92
+        line 153: 106
+        line 154: 110
+      StackMapTable: number_of_entries = 2
+        frame_type = 253 /* append */
+          offset_delta = 33
+          locals = [ int, int ]
+        frame_type = 45 /* same */
+
+  static int Func_1(char[], char[]);
+    descriptor: ([C[C)I
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=4, args_size=2
+         0: aload_0
+         1: iconst_0
+         2: caload
+         3: istore_2
+         4: iload_2
+         5: istore_3
+         6: iload_3
+         7: aload_1
+         8: iconst_0
+         9: caload
+        10: if_icmpeq     15
+        13: iconst_0
+        14: ireturn
+        15: iload_2
+        16: putstatic     #12                 // Field Ch_1_Glob:C
+        19: iconst_1
+        20: ireturn
+      LineNumberTable:
+        line 158: 0
+        line 159: 4
+        line 160: 6
+        line 162: 15
+        line 163: 19
+      StackMapTable: number_of_entries = 1
+        frame_type = 253 /* append */
+          offset_delta = 15
+          locals = [ int, int ]
+
+  static boolean Func_2(char[], char[]);
+    descriptor: ([C[C)Z
+    flags: ACC_STATIC
+    Code:
+      stack=3, locals=4, args_size=2
+         0: iconst_0
+         1: istore_3
+         2: aload_0
+         3: iconst_0
+         4: caload
+         5: istore_3
+         6: iload_3
+         7: bipush        65
+         9: if_icmplt     18
+        12: iload_3
+        13: bipush        90
+        15: if_icmple     20
+        18: iconst_1
+        19: ireturn
+        20: iconst_2
+        21: istore_2
+        22: iload_2
+        23: iconst_2
+        24: if_icmpgt     46
+        27: aload_0
+        28: aload_1
+        29: invokestatic  #15                 // Method Func_1:([C[C)I
+        32: ifne          44
+        35: bipush        65
+        37: istore_3
+        38: iinc          2, 1
+        41: goto          22
+        44: iconst_0
+        45: ireturn
+        46: iload_3
+        47: bipush        87
+        49: if_icmplt     61
+        52: iload_3
+        53: bipush        90
+        55: if_icmpge     61
+        58: bipush        7
+        60: istore_2
+        61: iload_3
+        62: bipush        82
+        64: if_icmpne     69
+        67: iconst_1
+        68: ireturn
+        69: iload_3
+        70: getstatic     #12                 // Field Ch_1_Glob:C
+        73: if_icmpeq     82
+        76: aload_0
+        77: iconst_0
+        78: iload_3
+        79: castore
+        80: iconst_1
+        81: ireturn
+        82: iconst_0
+        83: ireturn
+      LineNumberTable:
+        line 170: 0
+        line 172: 2
+        line 173: 6
+        line 175: 20
+        line 176: 22
+        line 177: 27
+        line 178: 35
+        line 179: 38
+        line 181: 44
+        line 184: 46
+        line 185: 61
+        line 188: 69
+        line 189: 76
+        line 190: 80
+        line 192: 82
+      StackMapTable: number_of_entries = 8
+        frame_type = 253 /* append */
+          offset_delta = 18
+          locals = [ top, int ]
+        frame_type = 1 /* same */
+        frame_type = 255 /* full_frame */
+          offset_delta = 1
+          locals = [ class "[C", class "[C", int, int ]
+          stack = []
+        frame_type = 21 /* same */
+        frame_type = 1 /* same */
+        frame_type = 14 /* same */
+        frame_type = 7 /* same */
+        frame_type = 12 /* same */
+
+  static boolean Func_3(int);
+    descriptor: (I)Z
+    flags: ACC_STATIC
+    Code:
+      stack=2, locals=2, args_size=1
+         0: iload_0
+         1: istore_1
+         2: iload_1
+         3: iconst_2
+         4: if_icmpne     9
+         7: iconst_1
+         8: ireturn
+         9: iconst_0
+        10: ireturn
+      LineNumberTable:
+        line 197: 0
+        line 198: 2
+        line 199: 9
+      StackMapTable: number_of_entries = 1
+        frame_type = 252 /* append */
+          offset_delta = 9
+          locals = [ int ]
+
+  public static int run();
+    descriptor: ()I
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      stack=4, locals=10, args_size=0
+         0: new           #16                 // class deepseek_dhrystone$Rec_Type
+         3: dup
+         4: invokespecial #17                 // Method deepseek_dhrystone$Rec_Type."<init>":()V
+         7: astore_0
+         8: new           #16                 // class deepseek_dhrystone$Rec_Type
+        11: dup
+        12: invokespecial #17                 // Method deepseek_dhrystone$Rec_Type."<init>":()V
+        15: astore_1
+        16: new           #18                 // class deepseek_dhrystone$IntRef
+        19: dup
+        20: invokespecial #19                 // Method deepseek_dhrystone$IntRef."<init>":()V
+        23: astore_2
+        24: new           #18                 // class deepseek_dhrystone$IntRef
+        27: dup
+        28: invokespecial #19                 // Method deepseek_dhrystone$IntRef."<init>":()V
+        31: astore_3
+        32: new           #18                 // class deepseek_dhrystone$IntRef
+        35: dup
+        36: invokespecial #19                 // Method deepseek_dhrystone$IntRef."<init>":()V
+        39: astore        4
+        41: new           #20                 // class deepseek_dhrystone$RefToRec
+        44: dup
+        45: invokespecial #21                 // Method deepseek_dhrystone$RefToRec."<init>":()V
+        48: astore        5
+        50: ldc           #22                 // int 100000
+        52: istore        8
+        54: aload_0
+        55: aload_1
+        56: putfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+        59: aload_0
+        60: iconst_0
+        61: putfield      #4                  // Field deepseek_dhrystone$Rec_Type.Discr:I
+        64: aload_0
+        65: iconst_2
+        66: putfield      #5                  // Field deepseek_dhrystone$Rec_Type.Enum_Comp:I
+        69: aload_0
+        70: bipush        40
+        72: putfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+        75: aload_0
+        76: bipush        32
+        78: bipush        31
+        80: invokestatic  #23                 // Method mkstr:(CI)[C
+        83: putfield      #24                 // Field deepseek_dhrystone$Rec_Type.Str_Comp:[C
+        86: aload_0
+        87: iconst_0
+        88: putfield      #25                 // Field deepseek_dhrystone$Rec_Type.E_Comp_2:I
+        91: aload_0
+        92: bipush        32
+        94: bipush        31
+        96: invokestatic  #23                 // Method mkstr:(CI)[C
+        99: putfield      #26                 // Field deepseek_dhrystone$Rec_Type.Str_2_Comp:[C
+       102: aload_0
+       103: bipush        65
+       105: putfield      #27                 // Field deepseek_dhrystone$Rec_Type.Ch_1_Comp:C
+       108: aload_0
+       109: bipush        66
+       111: putfield      #28                 // Field deepseek_dhrystone$Rec_Type.Ch_2_Comp:C
+       114: aload_1
+       115: aload_0
+       116: putfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+       119: aload_1
+       120: iconst_0
+       121: putfield      #4                  // Field deepseek_dhrystone$Rec_Type.Discr:I
+       124: aload_1
+       125: iconst_2
+       126: putfield      #5                  // Field deepseek_dhrystone$Rec_Type.Enum_Comp:I
+       129: aload_1
+       130: bipush        40
+       132: putfield      #3                  // Field deepseek_dhrystone$Rec_Type.Int_Comp:I
+       135: aload_1
+       136: bipush        32
+       138: bipush        31
+       140: invokestatic  #23                 // Method mkstr:(CI)[C
+       143: putfield      #24                 // Field deepseek_dhrystone$Rec_Type.Str_Comp:[C
+       146: aload_1
+       147: iconst_0
+       148: putfield      #25                 // Field deepseek_dhrystone$Rec_Type.E_Comp_2:I
+       151: aload_1
+       152: bipush        32
+       154: bipush        31
+       156: invokestatic  #23                 // Method mkstr:(CI)[C
+       159: putfield      #26                 // Field deepseek_dhrystone$Rec_Type.Str_2_Comp:[C
+       162: aload_1
+       163: bipush        65
+       165: putfield      #27                 // Field deepseek_dhrystone$Rec_Type.Ch_1_Comp:C
+       168: aload_1
+       169: bipush        66
+       171: putfield      #28                 // Field deepseek_dhrystone$Rec_Type.Ch_2_Comp:C
+       174: iconst_0
+       175: putstatic     #9                  // Field Int_Glob:I
+       178: iconst_0
+       179: putstatic     #13                 // Field Bool_Glob:Z
+       182: bipush        65
+       184: putstatic     #12                 // Field Ch_1_Glob:C
+       187: bipush        66
+       189: putstatic     #14                 // Field Ch_2_Glob:C
+       192: aload         5
+       194: aload_0
+       195: putfield      #11                 // Field deepseek_dhrystone$RefToRec.rec:Ldeepseek_dhrystone$Rec_Type;
+       198: iconst_0
+       199: istore        7
+       201: iload         7
+       203: iload         8
+       205: if_icmpge     452
+       208: invokestatic  #29                 // Method Proc_5:()V
+       211: invokestatic  #30                 // Method Proc_4:()V
+       214: aload_2
+       215: iconst_2
+       216: putfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       219: aload_3
+       220: iconst_3
+       221: putfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       224: aload_0
+       225: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+       228: astore_1
+       229: aload_1
+       230: astore_0
+       231: aload         5
+       233: invokestatic  #31                 // Method Proc_3:(Ldeepseek_dhrystone$RefToRec;)V
+       236: aload_2
+       237: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       240: aload_3
+       241: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       244: aload_0
+       245: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+       248: invokestatic  #7                  // Method Proc_7:(IILdeepseek_dhrystone$Rec_Type;)V
+       251: aload         4
+       253: iconst_4
+       254: putfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       257: aload_0
+       258: getfield      #5                  // Field deepseek_dhrystone$Rec_Type.Enum_Comp:I
+       261: aload_0
+       262: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+       265: invokestatic  #6                  // Method Proc_6:(ILdeepseek_dhrystone$Rec_Type;)V
+       268: aload         4
+       270: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       273: aload         4
+       275: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       278: aload_0
+       279: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+       282: invokestatic  #7                  // Method Proc_7:(IILdeepseek_dhrystone$Rec_Type;)V
+       285: getstatic     #32                 // Field Arr_1_Glob:[I
+       288: getstatic     #33                 // Field Arr_2_Glob:[[I
+       291: aload_2
+       292: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       295: aload         4
+       297: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       300: invokestatic  #34                 // Method Proc_8:([I[[III)V
+       303: aload_0
+       304: invokestatic  #35                 // Method Proc_1:(Ldeepseek_dhrystone$Rec_Type;)V
+       307: iconst_0
+       308: istore        6
+       310: iload         6
+       312: iconst_1
+       313: if_icmpge     345
+       316: aload_0
+       317: getfield      #5                  // Field deepseek_dhrystone$Rec_Type.Enum_Comp:I
+       320: invokestatic  #36                 // Method Func_3:(I)Z
+       323: ifeq          334
+       326: bipush        10
+       328: putstatic     #9                  // Field Int_Glob:I
+       331: goto          339
+       334: bipush        20
+       336: putstatic     #9                  // Field Int_Glob:I
+       339: iinc          6, 1
+       342: goto          310
+       345: aload_0
+       346: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+       349: getfield      #24                 // Field deepseek_dhrystone$Rec_Type.Str_Comp:[C
+       352: astore        9
+       354: aload_0
+       355: getfield      #24                 // Field deepseek_dhrystone$Rec_Type.Str_Comp:[C
+       358: aload         9
+       360: invokestatic  #37                 // Method Func_2:([C[C)Z
+       363: ifeq          374
+       366: bipush        15
+       368: putstatic     #9                  // Field Int_Glob:I
+       371: goto          379
+       374: bipush        25
+       376: putstatic     #9                  // Field Int_Glob:I
+       379: aload         5
+       381: aload_0
+       382: getfield      #2                  // Field deepseek_dhrystone$Rec_Type.Ptr_Comp:Ldeepseek_dhrystone$Rec_Type;
+       385: putfield      #11                 // Field deepseek_dhrystone$RefToRec.rec:Ldeepseek_dhrystone$Rec_Type;
+       388: aload         5
+       390: invokestatic  #31                 // Method Proc_3:(Ldeepseek_dhrystone$RefToRec;)V
+       393: aload         4
+       395: bipush        10
+       397: putfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       400: aload         4
+       402: invokestatic  #38                 // Method Proc_2:(Ldeepseek_dhrystone$IntRef;)V
+       405: getstatic     #12                 // Field Ch_1_Glob:C
+       408: bipush        65
+       410: if_icmpne     438
+       413: getstatic     #14                 // Field Ch_2_Glob:C
+       416: bipush        66
+       418: if_icmpne     438
+       421: getstatic     #13                 // Field Bool_Glob:Z
+       424: ifeq          438
+       427: getstatic     #9                  // Field Int_Glob:I
+       430: bipush        25
+       432: if_icmpne     438
+       435: goto          446
+       438: getstatic     #39                 // Field Sink:I
+       441: iconst_1
+       442: iadd
+       443: putstatic     #39                 // Field Sink:I
+       446: iinc          7, 1
+       449: goto          201
+       452: getstatic     #39                 // Field Sink:I
+       455: getstatic     #9                  // Field Int_Glob:I
+       458: aload_2
+       459: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       462: iadd
+       463: aload_3
+       464: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       467: iadd
+       468: aload         4
+       470: getfield      #8                  // Field deepseek_dhrystone$IntRef.v:I
+       473: iadd
+       474: iadd
+       475: putstatic     #39                 // Field Sink:I
+       478: getstatic     #39                 // Field Sink:I
+       481: ireturn
+      LineNumberTable:
+        line 217: 0
+        line 218: 8
+        line 219: 16
+        line 220: 24
+        line 221: 32
+        line 222: 41
+        line 226: 50
+        line 229: 54
+        line 230: 59
+        line 231: 64
+        line 232: 69
+        line 233: 75
+        line 234: 86
+        line 235: 91
+        line 236: 102
+        line 237: 108
+        line 239: 114
+        line 240: 119
+        line 241: 124
+        line 242: 129
+        line 243: 135
+        line 244: 146
+        line 245: 151
+        line 246: 162
+        line 247: 168
+        line 249: 174
+        line 250: 178
+        line 251: 182
+        line 252: 187
+        line 254: 192
+        line 256: 198
+        line 257: 208
+        line 258: 211
+        line 260: 214
+        line 261: 219
+        line 263: 224
+        line 264: 229
+        line 266: 231
+        line 268: 236
+        line 270: 251
+        line 271: 257
+        line 273: 268
+        line 274: 285
+        line 276: 303
+        line 278: 307
+        line 279: 310
+        line 280: 316
+        line 281: 326
+        line 283: 334
+        line 285: 339
+        line 288: 345
+        line 289: 354
+        line 290: 366
+        line 292: 374
+        line 295: 379
+        line 296: 388
+        line 297: 393
+        line 298: 400
+        line 300: 405
+        line 306: 438
+        line 256: 446
+        line 310: 452
+        line 311: 478
+      StackMapTable: number_of_entries = 10
+        frame_type = 255 /* full_frame */
+          offset_delta = 201
+          locals = [ class deepseek_dhrystone$Rec_Type, class deepseek_dhrystone$Rec_Type, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$RefToRec, top, int, int ]
+          stack = []
+        frame_type = 255 /* full_frame */
+          offset_delta = 108
+          locals = [ class deepseek_dhrystone$Rec_Type, class deepseek_dhrystone$Rec_Type, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$RefToRec, int, int, int ]
+          stack = []
+        frame_type = 23 /* same */
+        frame_type = 4 /* same */
+        frame_type = 5 /* same */
+        frame_type = 252 /* append */
+          offset_delta = 28
+          locals = [ class "[C" ]
+        frame_type = 4 /* same */
+        frame_type = 58 /* same */
+        frame_type = 7 /* same */
+        frame_type = 255 /* full_frame */
+          offset_delta = 5
+          locals = [ class deepseek_dhrystone$Rec_Type, class deepseek_dhrystone$Rec_Type, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$IntRef, class deepseek_dhrystone$RefToRec, top, int, int ]
+          stack = []
+
+  static {};
+    descriptor: ()V
+    flags: ACC_STATIC
+    Code:
+      stack=4, locals=0, args_size=0
+         0: bipush        50
+         2: newarray       int
+         4: putstatic     #32                 // Field Arr_1_Glob:[I
+         7: bipush        50
+         9: bipush        50
+        11: multianewarray #40,  2            // class "[[I"
+        15: putstatic     #33                 // Field Arr_2_Glob:[[I
+        18: bipush        31
+        20: newarray       char
+        22: dup
+        23: iconst_0
+        24: bipush        68
+        26: castore
+        27: dup
+        28: iconst_1
+        29: bipush        104
+        31: castore
+        32: dup
+        33: iconst_2
+        34: bipush        114
+        36: castore
+        37: dup
+        38: iconst_3
+        39: bipush        121
+        41: castore
+        42: dup
+        43: iconst_4
+        44: bipush        115
+        46: castore
+        47: dup
+        48: iconst_5
+        49: bipush        116
+        51: castore
+        52: dup
+        53: bipush        6
+        55: bipush        111
+        57: castore
+        58: dup
+        59: bipush        7
+        61: bipush        110
+        63: castore
+        64: dup
+        65: bipush        8
+        67: bipush        101
+        69: castore
+        70: dup
+        71: bipush        9
+        73: bipush        32
+        75: castore
+        76: dup
+        77: bipush        10
+        79: bipush        80
+        81: castore
+        82: dup
+        83: bipush        11
+        85: bipush        114
+        87: castore
+        88: dup
+        89: bipush        12
+        91: bipush        111
+        93: castore
+        94: dup
+        95: bipush        13
+        97: bipush        103
+        99: castore
+       100: dup
+       101: bipush        14
+       103: bipush        114
+       105: castore
+       106: dup
+       107: bipush        15
+       109: bipush        97
+       111: castore
+       112: dup
+       113: bipush        16
+       115: bipush        109
+       117: castore
+       118: dup
+       119: bipush        17
+       121: bipush        32
+       123: castore
+       124: dup
+       125: bipush        18
+       127: bipush        77
+       129: castore
+       130: dup
+       131: bipush        19
+       133: bipush        32
+       135: castore
+       136: dup
+       137: bipush        20
+       139: bipush        78
+       141: castore
+       142: dup
+       143: bipush        21
+       145: bipush        79
+       147: castore
+       148: dup
+       149: bipush        22
+       151: bipush        32
+       153: castore
+       154: dup
+       155: bipush        23
+       157: bipush        68
+       159: castore
+       160: dup
+       161: bipush        24
+       163: bipush        69
+       165: castore
+       166: dup
+       167: bipush        25
+       169: bipush        77
+       171: castore
+       172: dup
+       173: bipush        26
+       175: bipush        79
+       177: castore
+       178: dup
+       179: bipush        27
+       181: bipush        32
+       183: castore
+       184: dup
+       185: bipush        28
+       187: bipush        32
+       189: castore
+       190: dup
+       191: bipush        29
+       193: bipush        32
+       195: castore
+       196: dup
+       197: bipush        30
+       199: bipush        32
+       201: castore
+       202: putstatic     #41                 // Field STR_A:[C
+       205: bipush        33
+       207: newarray       char
+       209: dup
+       210: iconst_0
+       211: bipush        68
+       213: castore
+       214: dup
+       215: iconst_1
+       216: bipush        104
+       218: castore
+       219: dup
+       220: iconst_2
+       221: bipush        114
+       223: castore
+       224: dup
+       225: iconst_3
+       226: bipush        121
+       228: castore
+       229: dup
+       230: iconst_4
+       231: bipush        115
+       233: castore
+       234: dup
+       235: iconst_5
+       236: bipush        116
+       238: castore
+       239: dup
+       240: bipush        6
+       242: bipush        111
+       244: castore
+       245: dup
+       246: bipush        7
+       248: bipush        110
+       250: castore
+       251: dup
+       252: bipush        8
+       254: bipush        101
+       256: castore
+       257: dup
+       258: bipush        9
+       260: bipush        32
+       262: castore
+       263: dup
+       264: bipush        10
+       266: bipush        80
+       268: castore
+       269: dup
+       270: bipush        11
+       272: bipush        114
+       274: castore
+       275: dup
+       276: bipush        12
+       278: bipush        111
+       280: castore
+       281: dup
+       282: bipush        13
+       284: bipush        103
+       286: castore
+       287: dup
+       288: bipush        14
+       290: bipush        114
+       292: castore
+       293: dup
+       294: bipush        15
+       296: bipush        97
+       298: castore
+       299: dup
+       300: bipush        16
+       302: bipush        109
+       304: castore
+       305: dup
+       306: bipush        17
+       308: bipush        109
+       310: castore
+       311: dup
+       312: bipush        18
+       314: bipush        101
+       316: castore
+       317: dup
+       318: bipush        19
+       320: bipush        114
+       322: castore
+       323: dup
+       324: bipush        20
+       326: bipush        32
+       328: castore
+       329: dup
+       330: bipush        21
+       332: bipush        80
+       334: castore
+       335: dup
+       336: bipush        22
+       338: bipush        32
+       340: castore
+       341: dup
+       342: bipush        23
+       344: bipush        78
+       346: castore
+       347: dup
+       348: bipush        24
+       350: bipush        79
+       352: castore
+       353: dup
+       354: bipush        25
+       356: bipush        32
+       358: castore
+       359: dup
+       360: bipush        26
+       362: bipush        68
+       364: castore
+       365: dup
+       366: bipush        27
+       368: bipush        69
+       370: castore
+       371: dup
+       372: bipush        28
+       374: bipush        77
+       376: castore
+       377: dup
+       378: bipush        29
+       380: bipush        79
+       382: castore
+       383: dup
+       384: bipush        30
+       386: bipush        32
+       388: castore
+       389: dup
+       390: bipush        31
+       392: bipush        32
+       394: castore
+       395: dup
+       396: bipush        32
+       398: bipush        32
+       400: castore
+       401: putstatic     #42                 // Field STR_B:[C
+       404: return
+      LineNumberTable:
+        line 26: 0
+        line 27: 7
+        line 207: 18
+        line 211: 205
+}
+SourceFile: "deepseek_dhrystone.java"
+InnerClasses:
+     static #44= #20 of #10; //RefToRec=class deepseek_dhrystone$RefToRec of class deepseek_dhrystone
+     static #46= #18 of #10; //IntRef=class deepseek_dhrystone$IntRef of class deepseek_dhrystone
+     static #47= #16 of #10; //Rec_Type=class deepseek_dhrystone$Rec_Type of class deepseek_dhrystone

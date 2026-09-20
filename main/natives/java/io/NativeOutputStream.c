@@ -1,7 +1,8 @@
 #include "../../../native_methods_service.h"
 #include "../../../heap.h"
-#include "../../../stringpool.h"
+#include "../../../class.h"
 #include "../../../interpreter.h"
+#include "../../../jerror.h"
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -13,38 +14,29 @@
 #include <sys/select.h>
 
 #define WRITE_CHUNK_SIZE 512
-static NativeMethodReturnValue_t ns_open(Interpreter_t* ctx, Method_t* method, int32_t* args){
+static NativeMethodReturnValue_t ns_open(Thread_t* ctx, Method_t* method, int32_t* args){
     assert(0 && "Broken now (remade for new java.lang.String)");
     
     Object_t* path = (Object_t*)args[0];
     //int32_t flags = args[1];
 
     if(path == NULL){
-        Class_t* exception_class = NULL;
-        Object_t* exception = NULL; 
-        assert(class_load_bynameid(stringpool_add("java/lang/NullPointerException"), &exception_class) == JERR_OK);
-        assert(heap_class_object_alloc(exception_class, &exception) == JERR_OK);
-        assert(interpreter_method_invoke(ctx,class_find_method(exception_class, stringpool_add("<init>@()V")), (int32_t[1]){(int32_t)exception}, NULL) == JERR_OK); 
-
         NativeMethodReturnValue_t retval = {0};
-        retval.err = JERR_EXCEPTION;
-        *(Object_t**)retval.value = exception;
-        
+        retval.err = JERR_NULLPOINTER;
         return retval;            
     }
 
     void* storage = NULL;
-    assert(heap_class_object_get_fields(path, &storage) == JERR_OK);
+    //assert(heap_class_object_get_fields(path, &storage) == JERR_OK);
     
     Field_t *value = NULL, *count = NULL, *offset = NULL;
-    assert((value = class_find_field(path->class, stringpool_add("value@[C"))));
-    assert((count = class_find_field(path->class, stringpool_add("count@I"))));
-    assert((offset = class_find_field(path->class, stringpool_add("offset@I"))));
+    assert((value = class_find_field_cstr(path->class, "value@[C")));
+    assert((count = class_find_field_cstr(path->class, "count@I")));
+    assert((offset = class_find_field_cstr(path->class, "offset@I")));
 
-    Object_t* char_array = *(Object_t**)(storage + value->offset);
+    Object_t* char_array = *(Object_t**)&OBJECT_FIELDS(path)[value->offset];
 
-    int16_t* chars = NULL;
-    assert(heap_array_object_get_elements(char_array, (void**)&chars) == JERR_OK);
+    int16_t* chars = OBJECT_ARRAY_ELEMENTS(char_array, int16_t);
 
     int32_t real_length = *(int32_t*)(storage + count->offset) - *(int32_t*)(storage + offset->offset);
     int16_t* start = chars + *(int32_t*)(storage + offset->offset);
@@ -66,46 +58,39 @@ static NativeMethodReturnValue_t ns_open(Interpreter_t* ctx, Method_t* method, i
     return return_value;
 }
 
-static NativeMethodReturnValue_t ns_close(Interpreter_t* ctx, Method_t* method, int32_t* args){
+static NativeMethodReturnValue_t ns_close(Thread_t* ctx, Method_t* method, int32_t* args){
     Object_t* self = (Object_t*)args[0];
-    void* storage = NULL;
-    assert(heap_class_object_get_fields(self, &storage) == JERR_OK);
 
     Field_t *fd = NULL;
-    assert((fd = class_find_field(self->class, stringpool_add("fd@I"))));
+    assert((fd = class_find_field_cstr(self->class, "fd@I")));
 
-    close(*(int32_t*)(storage + fd->offset));
+    close(*(int32_t*)&OBJECT_FIELDS(self)[fd->offset]);
 
     return (NativeMethodReturnValue_t){JERR_OK, {0}};
 }
 
-static NativeMethodReturnValue_t ns_flush(Interpreter_t* ctx, Method_t* method, int32_t* args){
+static NativeMethodReturnValue_t ns_flush(Thread_t* ctx, Method_t* method, int32_t* args){
     Object_t* self = (Object_t*)args[0];
-    void* storage = NULL;
-    assert(heap_class_object_get_fields(self, &storage) == JERR_OK);
 
     Field_t *fd = NULL;
-    assert((fd = class_find_field(self->class, stringpool_add("fd@I"))));
+    assert((fd = class_find_field_cstr(self->class, "fd@I")));
 
-    fsync(*(int32_t*)(storage + fd->offset));
+    fsync(*(int32_t*)&OBJECT_FIELDS(self)[fd->offset]);
 
     return (NativeMethodReturnValue_t){JERR_OK, {0}};
 }
 
-static NativeMethodReturnValue_t ns_write(Interpreter_t* ctx, Method_t* method, int32_t* args){
+static NativeMethodReturnValue_t ns_write(Thread_t* ctx, Method_t* method, int32_t* args){
     NativeMethodReturnValue_t retval = {0};
 
     int32_t fd = args[0];
-    int32_t remaining = 0;
+    int32_t remaining = OBJECT_ARRAY_LENGTH(((Object_t*)args[1]));
     int32_t written = 0;
-    FAIL_SET_JUMP((retval.err = heap_array_object_get_length((Object_t*)args[1], &remaining)) == JERR_OK, retval, retval, exit);
 
     while(remaining > 0){
         int write_len = remaining > WRITE_CHUNK_SIZE ? WRITE_CHUNK_SIZE : remaining;
 
-        uint8_t* bytes = NULL;
-        FAIL_SET_JUMP((retval.err = heap_array_object_get_elements((Object_t*)args[1], (void**)&bytes)) == JERR_OK, retval, retval, exit);
-
+        uint8_t* bytes = OBJECT_ARRAY_ELEMENTS(((Object_t*)args[1]), uint8_t);
         int32_t really_written = 0;
         if((really_written = write(fd, bytes + written, write_len)) < 0){
             assert(0 && "TODO: IOException throw");
@@ -114,10 +99,8 @@ static NativeMethodReturnValue_t ns_write(Interpreter_t* ctx, Method_t* method, 
         remaining -= really_written;
         written += really_written;
 
-        thread_safepoint_check();
     }
 
-exit:
     return retval;
 }
 

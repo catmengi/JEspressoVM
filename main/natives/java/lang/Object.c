@@ -20,45 +20,50 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 #include "../../../native_methods_service.h"
 #include "../../../monitor.h"
 #include "../../../heap.h"
+#include "../../../class.h"
 
 #include <assert.h>
 
-static NativeMethodReturnValue_t wait(Interpreter_t* ctx, Method_t* self, int32_t* args){
-    assert(ctx->thread && "Cannot be run from bootstrap context");
-    return (NativeMethodReturnValue_t){monitor_wait((Object_t*)args[0]), {0}};
+static NativeMethodReturnValue_t wait(Thread_t* ctx, Method_t* self, int32_t* args){
+    assert(0);
+    //return (NativeMethodReturnValue_t){monitor_wait(ctx, (Object_t*)args[0]), {0}};
 }
-static NativeMethodReturnValue_t waitMillis(Interpreter_t* ctx, Method_t* self, int32_t* args){
-    assert(ctx->thread && "Cannot be run from bootstrap context");
-    return (NativeMethodReturnValue_t){monitor_waitTimeout((Object_t*)args[0], (*(int64_t*)&args[1] * 1000000)), {0}};
+static NativeMethodReturnValue_t waitMillis(Thread_t* ctx, Method_t* self, int32_t* args){
+    assert(0);
+
+    //return (NativeMethodReturnValue_t){monitor_waitTimeout(ctx, (Object_t*)args[0], (*(int64_t*)&args[1] * 1000000)), {0}};
 }
 
-static NativeMethodReturnValue_t waitMillisNanos(Interpreter_t* ctx, Method_t* self, int32_t* args){
-    assert(ctx->thread && "Cannot be run from bootstrap context");
-    return (NativeMethodReturnValue_t){monitor_waitTimeout((Object_t*)args[0], (*(int64_t*)&args[1] * 1000000) + args[3]), {0}};
+static NativeMethodReturnValue_t waitMillisNanos(Thread_t* ctx, Method_t* self, int32_t* args){
+    assert(0);
+
+    //return (NativeMethodReturnValue_t){monitor_waitTimeout(ctx, (Object_t*)args[0], (*(int64_t*)&args[1] * 1000000) + args[3]), {0}};
 }
 
-static NativeMethodReturnValue_t notify(Interpreter_t* ctx, Method_t* self, int32_t* args){
-    assert(ctx->thread && "Cannot be run from bootstrap context");
-    return (NativeMethodReturnValue_t){monitor_notify((Object_t*)args[0]), {0}};
+static NativeMethodReturnValue_t notify(Thread_t* ctx, Method_t* self, int32_t* args){
+    assert(0);
+
+    //return (NativeMethodReturnValue_t){monitor_notify(ctx, (Object_t*)args[0]), {0}};
 }
 
-static NativeMethodReturnValue_t notifyAll(Interpreter_t* ctx, Method_t* self, int32_t* args){
-    assert(ctx->thread && "Cannot be run from bootstrap context");
-    return (NativeMethodReturnValue_t){monitor_notifyAll((Object_t*)args[0]), {0}};
+static NativeMethodReturnValue_t notifyAll(Thread_t* ctx, Method_t* self, int32_t* args){
+    assert(0);
+    
+    //return (NativeMethodReturnValue_t){monitor_notifyAll(ctx, (Object_t*)args[0]), {0}};
 }
 
-static NativeMethodReturnValue_t hashCode(Interpreter_t* ctx, Method_t* self, int32_t* args){
+static NativeMethodReturnValue_t hashCode(Thread_t* ctx, Method_t* self, int32_t* args){
     NativeMethodReturnValue_t retval = {0};
     retval.err = JERR_OK;
-    *(int32_t*)retval.value = ((Object_t*)args[0])->ident;
+    *(int32_t*)retval.value = args[0];
 
     return retval;
 }
 
-static NativeMethodReturnValue_t getClass(Interpreter_t* ctx, Method_t* self, int32_t* args){
+static NativeMethodReturnValue_t getClass(Thread_t* ctx, Method_t* self, int32_t* args){
     NativeMethodReturnValue_t retval = {0};
     retval.err = JERR_OK;
-    *(Object_t**)retval.value = ((Object_t*)args[0])->class->class_object;
+    *(Object_t**)retval.value = JeNIHANDLE_OBJECT(((Object_t*)args[0])->class->class_object);
 
     return retval;    
 }

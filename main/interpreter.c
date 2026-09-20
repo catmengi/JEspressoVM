@@ -7,11 +7,9 @@
 #include "bumper.h"
 #include "class.h"
 #include "heap.h"
-#include "thread.h"
 #include "stringpool.h"
-#include "lb_endian.h"
+#include "thread.h"
 
-#include <stdatomic.h>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
@@ -22,150 +20,6 @@ static int s_exception_nameid[JERR_UNKNOWN - JERR_NOCLASSDEF] = {0};
 #define SHADOW_SET_REF(bitmap, idx)    ((bitmap)[(idx) >> 5] |= (1U << ((idx) & 31)))
 #define SHADOW_GET_REF(bitmap, idx)    (((bitmap)[(idx) >> 5] & (1U << ((idx) & 31))) ? 1 : 0)
 
-#ifdef INTERPRETER_DEBUG
-#define STACK_PUSH_INT(frame, value) ({ \
-    (frame)->stack[(frame)->sp] = (value); \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    (frame)->sp++; \
-})
-
-#define STACK_PUSH_FLOAT(frame, value) ({ \
-    union { float f; int32_t i; } _u = { .f = (value) }; \
-    (frame)->stack[(frame)->sp] = _u.i; \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    (frame)->sp++; \
-})
-
-#define STACK_PUSH_REF(frame, value) ({ \
-    (frame)->stack[(frame)->sp] = (int32_t)(uintptr_t)(value); \
-    SHADOW_SET_REF((frame)->shadow_stack, (frame)->sp); \
-    (frame)->sp++; \
-})
-
-#define STACK_POP_INT(frame) ({ \
-    if ((frame)->sp == 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    (frame)->sp--; \
-    if (SHADOW_GET_REF((frame)->shadow_stack, (frame)->sp) != 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    (frame)->stack[(frame)->sp]; \
-})
-
-#define STACK_POP_FLOAT(frame) ({ \
-    if ((frame)->sp == 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    (frame)->sp--; \
-    if (SHADOW_GET_REF((frame)->shadow_stack, (frame)->sp) != 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    union { int32_t i; float f; } _u = { .i = (frame)->stack[(frame)->sp] }; \
-    _u.f; \
-})
-
-#define STACK_POP_REF(frame) ({ \
-    if ((frame)->sp == 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    (frame)->sp--; \
-    if (SHADOW_GET_REF((frame)->shadow_stack, (frame)->sp) != 1) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    (void*)(uintptr_t)(frame)->stack[(frame)->sp]; \
-})
-
-#define STACK_PUSH_LONG(frame, value) ({ \
-    uint64_t _v = (value); \
-    uint32_t _high = (uint32_t)(_v >> 32); \
-    uint32_t _low  = (uint32_t)_v; \
-    (frame)->stack[(frame)->sp] = _high; \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    (frame)->sp++; \
-    (frame)->stack[(frame)->sp] = _low; \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    (frame)->sp++; \
-})
-
-#define STACK_PUSH_DOUBLE(frame, value) ({ \
-    union { double d; uint64_t u; } _u = { .d = (value) }; \
-    STACK_PUSH_LONG(frame, _u.u); \
-})
-
-#define STACK_POP_LONG(frame) ({ \
-    if ((frame)->sp < 2) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    (frame)->sp--; \
-    if (SHADOW_GET_REF((frame)->shadow_stack, (frame)->sp) != 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    uint32_t _low = (frame)->stack[(frame)->sp]; \
-    (frame)->sp--; \
-    if (SHADOW_GET_REF((frame)->shadow_stack, (frame)->sp) != 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
-    uint32_t _high = (frame)->stack[(frame)->sp]; \
-    ((uint64_t)_high << 32) | _low; \
-})
-
-#define STACK_POP_DOUBLE(frame) ({ \
-    uint64_t _u = STACK_POP_LONG(frame); \
-    union { uint64_t u; double d; } _conv = { .u = _u }; \
-    _conv.d; \
-})
-
-#define LOCAL_STORE_INT(frame, value, idx) ({ \
-    (frame)->locals[idx] = (value); \
-    SHADOW_CLEAR_REF((frame)->shadow_locals, idx); \
-})
-
-#define LOCAL_STORE_FLOAT(frame, value, idx) ({ \
-    union { float f; int32_t i; } _u = { .f = (value) }; \
-    (frame)->locals[idx] = _u.i; \
-    SHADOW_CLEAR_REF((frame)->shadow_locals, idx); \
-})
-
-#define LOCAL_STORE_REF(frame, value, idx) ({ \
-    (frame)->locals[idx] = (int32_t)(uintptr_t)(value); \
-    SHADOW_SET_REF((frame)->shadow_locals, idx); \
-})
-
-#define LOCAL_STORE_LONG(frame, value, idx) ({ \
-    uint64_t _v = (value); \
-    uint32_t _high = (uint32_t)(_v >> 32); \
-    uint32_t _low  = (uint32_t)_v; \
-    (frame)->locals[idx] = _high; \
-    SHADOW_CLEAR_REF((frame)->shadow_locals, idx); \
-    (frame)->locals[idx + 1] = _low; \
-    SHADOW_CLEAR_REF((frame)->shadow_locals, idx + 1); \
-})
-
-#define LOCAL_STORE_DOUBLE(frame, value, idx) ({ \
-    union { double d; uint64_t u; } _u = { .d = (value) }; \
-    LOCAL_STORE_LONG(frame, _u.u, idx); \
-})
-
-#define LOCAL_LOAD_INT(frame, idx) ({ \
-    if (SHADOW_GET_REF((frame)->shadow_locals, idx) != 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    (frame)->locals[idx]; \
-})
-
-#define LOCAL_LOAD_FLOAT(frame, idx) ({ \
-    if (SHADOW_GET_REF((frame)->shadow_locals, idx) != 0) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    union { int32_t i; float f; } _u = { .i = (frame)->locals[idx] }; \
-    _u.f; \
-})
-
-#define LOCAL_LOAD_REF(frame, idx) ({ \
-    if (SHADOW_GET_REF((frame)->shadow_locals, idx) != 1) {err = JERR_TYPECHECK_FAILURE; goto exit; } \
-    (void*)(uintptr_t)(frame)->locals[idx]; \
-})
-
-#define LOCAL_LOAD_LONG(frame, idx) ({ \
-    if (SHADOW_GET_REF((frame)->shadow_locals, idx) != 0 || \
-        SHADOW_GET_REF((frame)->shadow_locals, idx + 1) != 0) { \
-        err = JERR_TYPECHECK_FAILURE; goto exit; \
-    } \
-    uint32_t _high = (frame)->locals[idx]; \
-    uint32_t _low  = (frame)->locals[idx + 1]; \
-    ((uint64_t)_high << 32) | _low; \
-})
-
-#define LOCAL_LOAD_DOUBLE(frame, idx) ({ \
-    uint64_t _u = LOCAL_LOAD_LONG(frame, idx); \
-    union { uint64_t u; double d; } _conv = { .u = _u }; \
-    _conv.d; \
-})
-#else
 #define STACK_PUSH_INT(frame, value) ({ \
     (frame)->stack[(frame)->sp] = (value); \
     SHADOW_CLEAR_REF((frame)->shadow_stack, (frame)->sp); \
@@ -277,7 +131,6 @@ static int s_exception_nameid[JERR_UNKNOWN - JERR_NOCLASSDEF] = {0};
     union { uint64_t u; double d; } _conv = { .u = _u }; \
     _conv.d; \
 })
-#endif
 
 #define STACK_PUSH_GENERIC(frame, type, value)\
 ({switch(type){\
@@ -288,7 +141,7 @@ static int s_exception_nameid[JERR_UNKNOWN - JERR_NOCLASSDEF] = {0};
         case TYPE_BYTE:\
             STACK_PUSH_INT(frame, *(int32_t*)value);\
             break;\
-        case TYPE_REFERENCE:\
+        case TYPE_REF:\
             STACK_PUSH_REF(frame, *(void**)value);\
             break;\
         case TYPE_FLOAT:\
@@ -312,7 +165,7 @@ static int s_exception_nameid[JERR_UNKNOWN - JERR_NOCLASSDEF] = {0};
         case TYPE_CHAR:\
             *(int32_t*)value = STACK_POP_INT(frame);\
             break;\
-        case TYPE_REFERENCE:\
+        case TYPE_REF:\
             *(void**)value = STACK_POP_REF(frame);\
             break;\
         case TYPE_FLOAT:\
@@ -337,6 +190,7 @@ static inline uint16_t error_to_exception_nameid(Error_t err){
 
 void interpreter_init(){
     s_exception_nameid[error_to_exception_nameid_index(JERR_NOCLASSDEF)] = stringpool_add("java/lang/NoClassDefFoundError");
+    s_exception_nameid[error_to_exception_nameid_index(JERR_OOM)] = stringpool_add("java/lang/OutOfMemoryError");
     s_exception_nameid[error_to_exception_nameid_index(JERR_INVALIDMONITORSTATE)] = stringpool_add("java/lang/IllegalMonitorStateException");
     s_exception_nameid[error_to_exception_nameid_index(JERR_NULLPOINTER)] = stringpool_add("java/lang/NullPointerException");
     s_exception_nameid[error_to_exception_nameid_index(JERR_NOSUCHFIELD)] = stringpool_add("java/lang/NoSuchFieldError");
@@ -352,24 +206,16 @@ void interpreter_init(){
     s_exception_nameid[error_to_exception_nameid_index(JERR_STACKOVERFLOW)] = stringpool_add("java/lang/StackOverflowError");
 }
 
-Interpreter_t* interpreter_ctx_init(Thread_t* thread, Interpreter_t* ctx){
-    bumper_create_from(&ctx->arena, ctx->stackbuf, sizeof(ctx->stackbuf));
-    ctx->frame_count = 0;
-    ctx->thread = thread; //Its done like this, so thread can be NULL!
-    ctx->frame = NULL;
-
-    return ctx;
-}
 
 static inline int int_ceil(int n, int d) {
     return (n + d - 1) / d;
 }
 
-InterpreterFrame_t* interpreter_frame_push(Interpreter_t* ctx, Method_t* method){
+InterpreterFrame_t* interpreter_frame_push(Thread_t* thread, Method_t* method){
     MethodBytecode_t* bytecode = method->code; //Assumption that method is bytecode, not native
     size_t size = (bytecode->max_locals + bytecode->max_stack + int_ceil(bytecode->max_stack, 32) + int_ceil(bytecode->max_locals, 32)) * sizeof(int32_t) + sizeof(InterpreterFrame_t);
 
-    void* chunk = bumper_alloc(&ctx->arena, size);
+    void* chunk = bumper_alloc(&thread->arena, size);
     if(!chunk) return NULL;
 
     bump_allocator_t sub_arena = {0};
@@ -389,26 +235,24 @@ InterpreterFrame_t* interpreter_frame_push(Interpreter_t* ctx, Method_t* method)
     frame->pc = bytecode->code;
     frame->sp = 0;
     frame->method = method;
-    frame->prev = ctx->frame;
+    frame->prev = thread->frame;
 
-    ctx->frame = frame;
-    ctx->frame_count++;
+    thread->frame = frame;
 
     return frame;
 }
 
-InterpreterFrame_t* interpreter_frame_pop(Interpreter_t* ctx){
-    if(ctx->frame){
-        InterpreterFrame_t* frame = ctx->frame;
-        ctx->frame_count--;
-        ctx->frame = frame->prev;
-        bumper_unwind(&ctx->arena, frame->size);
+InterpreterFrame_t* interpreter_frame_pop(Thread_t* thread){
+    if(thread->frame){
+        InterpreterFrame_t* frame = thread->frame;
+        thread->frame = frame->prev;
+        bumper_unwind(&thread->arena, frame->size);
     }
-    return ctx->frame;
+    return thread->frame;
 }
 
-InterpreterFrame_t* interpreter_frame_get(Interpreter_t* ctx){
-    return ctx->frame;
+InterpreterFrame_t* interpreter_frame_get(Thread_t* thread){
+    return thread->frame;
 }
 
 static bool check_arguments(Method_t* method, uint32_t* shadow_stack, uint32_t sp){
@@ -419,9 +263,9 @@ static bool check_arguments(Method_t* method, uint32_t* shadow_stack, uint32_t s
     return true;
 }
 
-static Error_t native_method_invoke(Interpreter_t* ctx, InterpreterFrame_t* frame, Method_t* method){
+static Error_t native_method_invoke(Thread_t* thread, InterpreterFrame_t* frame, Method_t* method){
     int32_t* args = &frame->stack[frame->sp - method->args_slots];
-    NativeMethodReturnValue_t retval = ((NativeMethod_t)method->code)(ctx,method,args);
+    NativeMethodReturnValue_t retval = ((NativeMethod_t)method->code)(thread,method,args);
 
     switch(retval.err){
         case JERR_OK:
@@ -430,136 +274,27 @@ static Error_t native_method_invoke(Interpreter_t* ctx, InterpreterFrame_t* fram
             return retval.err;
 
         case JERR_EXCEPTION: 
-            STACK_PUSH_REF(frame, *(Object_t**)retval.value);
+            JeNIHANDLE_OBJECT(thread->pending_exception) = *(Object_t**)retval.value;
             return JERR_EXCEPTION;
 
         default: return retval.err;
     }
 }
 
-Error_t interpreter_method_invoke(Interpreter_t* ctx, Method_t* method, int32_t* arguments, void* return_value){
+Error_t interpreter_execute(Thread_t* thread){
     Error_t err = JERR_OK;
 
-    FAIL_SET_JUMP(method && (arguments || method->args_slots == 0) && (return_value || method->return_type == TYPE_VOID), err, JERR_BADPARAM, exit);
-    InterpreterFrame_t* retstub = interpreter_frame_push(ctx, &(Method_t){.code = 
-                                                &(MethodBytecode_t){.code_length = 2,
-                                                                    .code = (uint8_t[3]){EJOPCODE_NOP,EJOPCODE_NOP, EJOPCODE_INTERPRETEREXIT},
-                                                                    .max_stack = 2 + method->flags.is_native ? method->args_slots : 0,
-                                                                   }, .args_bitmap_size = 0});
-    FAIL_SET_JUMP(retstub, err, JERR_STACKOVERFLOW, exit);
-    if(method->flags.is_native){
-        assert(0 && "TODO:");
-    } else {
-        InterpreterFrame_t* frame = interpreter_frame_push(ctx, method);
-        FAIL_SET_JUMP(frame, err, JERR_STACKOVERFLOW, exit);
+    Class_t* pending_clinit = NULL;
+    InterpreterFrame_t* frame = interpreter_frame_get(thread);
+    unsigned quota = thread->bytecode_quota;
 
-        memcpy(frame->locals, arguments, method->args_slots * sizeof(int32_t));
-
-        FAIL_SET_JUMP((err = interpreter_execute(ctx)) == JERR_OK, err, err, exit);
-    }
-    STACK_POP_GENERIC(retstub, method->return_type, return_value);
-    interpreter_frame_pop(ctx); //Delete retstub
-
-exit:   
-    return err;
-}
-
-static void frame_unlock_monitors(InterpreterFrame_t* frame){
-    Monitor_t *monitor = NULL, *tmp = NULL;
-    list_for_each_entry_safe(monitor, tmp, &frame->held_monitors, list){
-        assert(monitor_exit_force(monitor) == JERR_OK);
-    }
-}
-
-static Error_t throw_exception(Interpreter_t* ctx, Object_t* exception_object){
-    size_t unwind_by = 0;
-    //TODO: prepare stack trace!
-
-    Interpreter_t* interpreter = ctx;
-    for(InterpreterFrame_t* frame = interpreter->frame; frame; frame = frame->prev, interpreter->frame = frame, frame_unlock_monitors(frame)){
-        MethodBytecode_t* bytecode = frame->method->code;
-
-        for(unsigned i = 0; i < bytecode->exception_count; i++){
-            MethodExceptionHandler_t* exception = &bytecode->exceptions[i];
-            if(exception->start_pc + bytecode->code <= frame->pc && exception->end_pc + bytecode->code > frame->pc){
-                ClassSymbol_t* exception_type_symbol = exception->type;
-
-                if(exception_type_symbol == NULL || class_resolv_symbol(ctx, exception_type_symbol) == JERR_OK){
-                    if(exception_type_symbol == NULL || class_is_compatible(exception_object->class,exception_type_symbol->value)){
-                        bumper_unwind(&interpreter->arena, unwind_by);
-
-                        frame->pc = bytecode->code + exception->handler_pc;
-                        frame->sp = 0;
-                        STACK_PUSH_REF(frame, exception_object);
-
-                        return JERR_OK;
-                    }
-                }
-            }
-        }
-
-        unwind_by += frame->size;
-    }
-
-    return JERR_UNHANDLED_EXCEPTION;
-}
-
-#define SPINLOCK_ENTER(spinlock) ({while(atomic_flag_test_and_set(&(spinlock))){}})
-#define SPINLOCK_EXIT(spinlock) atomic_flag_clear(&(spinlock))
-
-static Error_t run_clinit(Interpreter_t* ctx, Class_t* class){
-    Error_t err = JERR_OK;
-
-    LIST_HEAD(clinit_list);
-    for(Class_t* cur = class; cur; cur = cur->parent){
-        int expected = 0;
-        if(atomic_compare_exchange_strong(&cur->clinit_stage, &expected, 1)){
-            atomic_store(&cur->clinit_trigger, ctx->thread);
-
-            INIT_LIST_HEAD(&cur->list[1]);
-            list_add(&cur->list[1], &clinit_list);
-        } else {
-            while(atomic_load(&cur->clinit_stage) != 2){
-                if(atomic_load(&cur->clinit_trigger) == ctx->thread){
-                    goto clinit_launch;
-                }
-                usleep(1000); //To not busy spin CPU
-            }
-
-            goto clinit_launch;
-        }
-    }
-
-clinit_launch:
-    if(!list_empty(&clinit_list)){
-        int32_t clinit_nameid = stringpool_add("<clinit>@()V");
-        assert(clinit_nameid >= 0);
-
-        Class_t* to_init = NULL;
-        list_for_each_entry(to_init, &clinit_list, list[1]){
-            Method_t* clinit = class_find_method(to_init, clinit_nameid);
-            if(clinit){
-                FAIL_SET_JUMP((err = interpreter_method_invoke(ctx, clinit, NULL, NULL)) == JERR_OK, err, JERR_CLINIT_FAILED, exit);
-            }
-            atomic_store(&to_init->clinit_stage, 2);
-        }
-    }
-
-exit:
-    return err;
-}
-
-Error_t interpreter_execute(Interpreter_t* ctx){
-    Error_t err = JERR_OK;
-    InterpreterFrame_t* frame = interpreter_frame_get(ctx);
-
-    static const JavaValueType_t sym_to_value_type[] = {
+    static const ValueType_t sym_to_value_type[] = {
         [SYMBOL_INT] = TYPE_INT,
         [SYMBOL_FLOAT] = TYPE_FLOAT,
         [SYMBOL_LONG] = TYPE_LONG,
         [SYMBOL_DOUBLE] = TYPE_DOUBLE,
-        [SYMBOL_STRING] = TYPE_REFERENCE,
-        [SYMBOL_CLASS] = TYPE_REFERENCE,
+        [SYMBOL_STRING] = TYPE_REF,
+        [SYMBOL_CLASS] = TYPE_REF,
     };
 
     void* opcode_labels[256] = {
@@ -706,6 +441,7 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         [EJOPCODE_DUP] = &&EJOPCODE_DUP,
         [EJOPCODE_NEW] = &&EJOPCODE_NEW,
         [EJOPCODE_NEWARRAY] = &&EJOPCODE_NEWARRAY,
+        [EJOPCODE_MULTIANEWARRAY] = &&EJOPCODE_MULTIANEWARRAY,
         [EJOPCODE_LDC] = &&EJOPCODE_LDC,
         [EJOPCODE_LDC2_W] = &&EJOPCODE_LDC2_W,
         [EJOPCODE_LDC_W] = &&EJOPCODE_LDC_W,
@@ -800,17 +536,81 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         [EJOPCODE_INTERPRETEREXIT] = &&EJOPCODE_INTERPRETEREXIT,
     };
 
+    goto *opcode_labels[*frame->pc];
+
     // Helper to advance PC and jump to next opcode
     #define NEXT() ({ \
-        frame->pc += 1 + JOpcode_args_sizes[*frame->pc]; \
+        frame->pc += 1 + JOpcode_args_sizes[*frame->pc];\
+        /*if(quota-- == 0) return JERR_SCHEDULE;\*/\
         goto *opcode_labels[*frame->pc]; \
     })
+
+    #define RUN_CLINIT(class) {if((class)->clinit_stage == 0 || ((class)->clinit_stage == 1 && (class)->clinit_trigger != thread)) {pending_clinit = (class); goto clinit_launch;}}
+    #define THROW_EXCEPTION(exception) {JeNIHANDLE_OBJECT(thread->pending_exception) = (exception); goto throw_exception;}
+    #define RESOLV_SYMBOL(symbol) ({if((symbol)->type >= PROXY_SYMBOL_CLASS){if((err = class_resolv_symbol((symbol))) != JERR_OK){goto exit;}} ((symbol)->value);})
+
+    clinit_launch:{
+        for(Class_t* cur = pending_clinit; cur; cur = cur->parent){
+            if(cur->clinit){
+                if(cur->clinit_stage != 0){
+                    if(cur->clinit_stage == 2) continue;
+                    if(cur->clinit_stage == 1 && cur->clinit_trigger != thread){
+                        list_del_init(&thread->list);
+                        list_add_tail(&thread->list, &cur->clinit_waiters);
+
+                        return JERR_SCHEDULE;
+                    } else break;
+                }
+
+                cur->clinit_stage = 1;
+                cur->clinit_trigger = thread;
+
+                assert((frame = interpreter_frame_push(thread, cur->clinit)));
+            } else cur->clinit_stage = 2;
+        }
+
+        goto *opcode_labels[*frame->pc];
+    }
+
+    throw_exception:{
+        size_t unwind_by = 0;
+        Object_t* exception_object = JeNIHANDLE_OBJECT(thread->pending_exception);
+        Class_t* exception_class = OBJECT_CLASS(exception_object);
+        
+        for(;frame; frame = frame->prev){
+            MethodBytecode_t* bytecode = frame->method->code;
+
+            for(unsigned i = 0; i < bytecode->exception_count; i++){
+                MethodExceptionHandler_t* exception = &bytecode->exceptions[i];
+                if(exception->start_pc + bytecode->code <= frame->pc && exception->end_pc + bytecode->code > frame->pc){
+                    ClassSymbol_t* exception_type_symbol = exception->type;
+
+                    if(exception_type_symbol == NULL || class_resolv_symbol( exception_type_symbol) == JERR_OK){
+                        if(exception_type_symbol == NULL || class_is_compatible(exception_class,exception_type_symbol->value)){
+                            bumper_unwind(&thread->arena, unwind_by);
+
+                            thread->frame = frame;
+                            JeNIHANDLE_OBJECT(thread->pending_exception) = NULL;
+
+                            frame->pc = bytecode->code + exception->handler_pc;
+                            frame->sp = 0;
+                            STACK_PUSH_REF(frame, exception_object);
+
+                            goto *opcode_labels[*frame->pc];
+                        }
+                    }
+                }
+            }
+
+            unwind_by += frame->size;
+        }
+
+        return JERR_UNHANDLED_EXCEPTION;
+    }
 
     // -----------------------------------------------------------------
     // Interpreter starts here
     // -----------------------------------------------------------------
-    goto *opcode_labels[*frame->pc];
-
     // ========== LOADS ==========
     EJOPCODE_ILOAD:
         STACK_PUSH_INT(frame, LOCAL_LOAD_INT(frame, *(frame->pc + 1)));
@@ -1041,87 +841,62 @@ Error_t interpreter_execute(Interpreter_t* ctx){
 
     // ========== RETURNS ==========
     EJOPCODE_RETURN:{
-        thread_safepoint_check();
+        bool is_clinit = frame->method == frame->method->class->clinit;
+        Class_t* clinit_class = frame->method->class;
+        frame = interpreter_frame_pop(thread);
 
-        if(frame->method->flags.is_syncronized){
-            Object_t* sync_object = frame->method->flags.is_static ? frame->method->class->class_object : (Object_t*)frame->locals[0];
-            FAIL_SET_JUMP((err = monitor_exit(sync_object->monitor)) == JERR_OK, err, err, exit);
+        if(is_clinit){
+            clinit_class->clinit_stage = 2;
+            Thread_t* waiter = NULL, *tmp = NULL;
+            list_for_each_entry_safe(waiter, tmp, &clinit_class->clinit_waiters, list){
+                thread_scheduler_add(waiter); //It will list_del_init internally.
+            }
         }
 
-        if (!(frame = interpreter_frame_pop(ctx))) return JERR_OK;
-        NEXT();
+        if(frame){
+            if(is_clinit) goto *opcode_labels[*frame->pc];
+            else NEXT();
+        } else {
+            thread_exit(thread);
+            return JERR_OK;
+        }
     }
 
     EJOPCODE_IRETURN: {
-        thread_safepoint_check();
-
-        if(frame->method->flags.is_syncronized){
-            Object_t* sync_object = frame->method->flags.is_static ? frame->method->class->class_object : (Object_t*)frame->locals[0];
-            FAIL_SET_JUMP((err = monitor_exit(sync_object->monitor)) == JERR_OK, err, err, exit);
-        }
-
         int32_t ret = STACK_POP_INT(frame);
-        if (!(frame = interpreter_frame_pop(ctx)))
+        if (!(frame = interpreter_frame_pop(thread)))
             return JERR_ORPHAN_RETURN;
         STACK_PUSH_INT(frame, ret);
         NEXT();
     }
 
     EJOPCODE_FRETURN:{
-        thread_safepoint_check();
-
-        if(frame->method->flags.is_syncronized){
-            Object_t* sync_object = frame->method->flags.is_static ? frame->method->class->class_object : (Object_t*)frame->locals[0];
-            FAIL_SET_JUMP((err = monitor_exit(sync_object->monitor)) == JERR_OK, err, err, exit);
-        }
-
         float ret = STACK_POP_FLOAT(frame);
-        if (!(frame = interpreter_frame_pop(ctx)))
+        if (!(frame = interpreter_frame_pop(thread)))
             return JERR_ORPHAN_RETURN;
         STACK_PUSH_FLOAT(frame, ret);
         NEXT();
     }
 
     EJOPCODE_ARETURN:{
-        thread_safepoint_check();
-
-        if(frame->method->flags.is_syncronized){
-            Object_t* sync_object = frame->method->flags.is_static ? frame->method->class->class_object : (Object_t*)frame->locals[0];
-            FAIL_SET_JUMP((err = monitor_exit(sync_object->monitor)) == JERR_OK, err, err, exit);
-        }
-
         void* ret = STACK_POP_REF(frame);
-        if (!(frame = interpreter_frame_pop(ctx)))
+        if (!(frame = interpreter_frame_pop(thread)))
             return JERR_ORPHAN_RETURN;
         STACK_PUSH_REF(frame, ret);
         NEXT();
     }
 
     EJOPCODE_LRETURN:{
-        thread_safepoint_check();
-
-        if(frame->method->flags.is_syncronized){
-            Object_t* sync_object = frame->method->flags.is_static ? frame->method->class->class_object : (Object_t*)frame->locals[0];
-            FAIL_SET_JUMP((err = monitor_exit(sync_object->monitor)) == JERR_OK, err, err, exit);
-        }
-
         uint64_t ret = STACK_POP_LONG(frame);
-        if (!(frame = interpreter_frame_pop(ctx)))
+        if (!(frame = interpreter_frame_pop(thread)))
             return JERR_ORPHAN_RETURN;
         STACK_PUSH_LONG(frame, ret);
         NEXT();
     }
 
     EJOPCODE_DRETURN:{
-        thread_safepoint_check();
-
-        if(frame->method->flags.is_syncronized){
-            Object_t* sync_object = frame->method->flags.is_static ? frame->method->class->class_object : (Object_t*)frame->locals[0];
-            FAIL_SET_JUMP((err = monitor_exit(sync_object->monitor)) == JERR_OK, err, err, exit);
-        }
-
         double ret = STACK_POP_DOUBLE(frame);
-        if (!(frame = interpreter_frame_pop(ctx)))
+        if (!(frame = interpreter_frame_pop(thread)))
             return JERR_ORPHAN_RETURN;
         STACK_PUSH_DOUBLE(frame, ret);
         NEXT();
@@ -1130,86 +905,26 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     // ========== FIELD ACCESS ==========
     EJOPCODE_PUTSTATIC: {
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_FIELD, err, JERR_TYPECHECK_FAILURE, exit);
-
-
-        Field_t* field = sym->value;
-        void* value = (field->class->sfields_storage + field->offset);
-
-        FAIL_SET_JUMP(field->flags.is_static, err, JERR_INCOMPATIBLECLASSCHANGE, exit);
-        FAIL_SET_JUMP((err = run_clinit(ctx, field->class)) == JERR_OK, err, err, exit);
+        Field_t* field = RESOLV_SYMBOL(sym);
+        RUN_CLINIT(field->class);
 
 
         field->constantvalue = NULL;
-        
-        if(field->flags.is_volatile){
-            char volatile_buf[8] = {0};
-            STACK_POP_GENERIC(frame, field->type, volatile_buf);
-
-            switch(field->size){
-                case 1:
-                    __atomic_store_n((uint8_t*)value, *(uint8_t*)volatile_buf, __ATOMIC_SEQ_CST);
-                    break;
-    
-                case 2:
-                    __atomic_store_n((uint16_t*)value, *(uint16_t*)volatile_buf, __ATOMIC_SEQ_CST);
-                    break;
-
-                case 4:
-                    __atomic_store_n((uint32_t*)value, *(uint32_t*)volatile_buf, __ATOMIC_SEQ_CST);
-                    break;
-            
-                case 8:
-                    __atomic_store_n((uint64_t*)value, *(uint64_t*)volatile_buf, __ATOMIC_SEQ_CST);
-                    break;
-            }
-
-            NEXT();
-        }
-
-        STACK_POP_GENERIC(frame, field->type, value);
+        STACK_POP_GENERIC(frame, field->type, (field->class->sfields_storage + field->offset));
         NEXT();
     }
 
     EJOPCODE_GETSTATIC: {
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_FIELD, err, JERR_TYPECHECK_FAILURE, exit);
-
-        Field_t* field = sym->value;
-        FAIL_SET_JUMP(field->flags.is_static, err, JERR_INCOMPATIBLECLASSCHANGE, exit);
-        FAIL_SET_JUMP((err = run_clinit(ctx, field->class)) == JERR_OK, err, err, exit);
-
+        Field_t* field = RESOLV_SYMBOL(sym);
+        RUN_CLINIT(field->class);
 
         void* value = (field->class->sfields_storage + field->offset);
-
         if (field->constantvalue) {
-            FAIL_SET_JUMP((err = class_resolv_symbol(ctx, field->constantvalue)) == JERR_OK, err, err, exit);
+            FAIL_JUMP((err = class_resolv_symbol(field->constantvalue)) == JERR_OK, exit);
             memcpy(value, (field->constantvalue->type == SYMBOL_STRING) ? &field->constantvalue->value : field->constantvalue->value,
                    ((field->type == TYPE_LONG || field->type == TYPE_DOUBLE) ? 2 : 1) * sizeof(int32_t));
             field->constantvalue = NULL;
-        }
-
-        if(field->flags.is_volatile){
-            char volatile_buf[8] = {0};
-            switch(field->size){
-                case 1:
-                    *(uint8_t*)volatile_buf = __atomic_load_n((uint8_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-                case 2:
-                    *(uint16_t*)volatile_buf = __atomic_load_n((uint16_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-                case 4:
-                    *(uint32_t*)volatile_buf = __atomic_load_n((uint32_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-                case 8:
-                    *(uint64_t*)volatile_buf = __atomic_load_n((uint64_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-            }
-
-            STACK_PUSH_GENERIC(frame, field->type, volatile_buf);
-            NEXT();
         }
 
         STACK_PUSH_GENERIC(frame, field->type, value);
@@ -1218,114 +933,36 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     
     EJOPCODE_GETFIELD:{
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_FIELD, err, JERR_TYPECHECK_FAILURE, exit);
-
-        Field_t* field = sym->value;
-        FAIL_SET_JUMP(!field->flags.is_static, err, JERR_INCOMPATIBLECLASSCHANGE, exit);
-
+        Field_t* field = RESOLV_SYMBOL(sym);
+        
         Object_t* object = STACK_POP_REF(frame);
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP(class_is_compatible(object->class, field->class), err, JERR_TYPECHECK_FAILURE, exit);
-
-        void* fields = NULL;
-        FAIL_SET_JUMP((err = heap_class_object_get_fields(object, &fields)) == JERR_OK, err, err, exit);
-
-        void* value = fields + field->offset;
-
-        if(field->flags.is_volatile){
-            char volatile_buf[8] = {0};
-            switch(field->size){
-                case 1:
-                    *(uint8_t*)volatile_buf = __atomic_load_n((uint8_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-                case 2:
-                    *(uint16_t*)volatile_buf = __atomic_load_n((uint16_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-                case 4:
-                    *(uint32_t*)volatile_buf = __atomic_load_n((uint32_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-                case 8:
-                    *(uint64_t*)volatile_buf = __atomic_load_n((uint64_t*)value, __ATOMIC_ACQUIRE);
-                    break;
-            }
-
-            STACK_PUSH_GENERIC(frame, field->type, volatile_buf);
-            NEXT();
-        }
-
-
-        STACK_PUSH_GENERIC(frame, field->type, (fields + field->offset));
+        STACK_PUSH_GENERIC(frame, field->type, &(OBJECT_FIELDS(object)[field->offset]));
         NEXT();
     }
 
     EJOPCODE_PUTFIELD:{
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_FIELD, err, JERR_TYPECHECK_FAILURE, exit);
+        Field_t* field = RESOLV_SYMBOL(sym);
 
-        Field_t* field = sym->value;
-        FAIL_SET_JUMP(!field->flags.is_static, err, JERR_INCOMPATIBLECLASSCHANGE, exit);
-
-        uint64_t value_buf;
-        STACK_POP_GENERIC(frame, field->type, &value_buf);
-
-        Object_t* object = STACK_POP_REF(frame);
+        Object_t* object = (Object_t*)frame->stack[frame->sp - (field->type == TYPE_DOUBLE || field->type == TYPE_LONG ? 2 : 1) - 1];
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP(class_is_compatible(object->class, field->class), err, JERR_TYPECHECK_FAILURE, exit);
+        STACK_POP_GENERIC(frame, field->type, &(OBJECT_FIELDS(object)[field->offset]));
+        frame->sp--; //Decrement SP for the Object too.
 
-        void* fields = NULL;
-        FAIL_SET_JUMP((err = heap_class_object_get_fields(object, &fields)) == JERR_OK, err, err, exit);
-
-        void* value = (fields + field->offset);
-
-        if(field->flags.is_volatile){
-            switch(field->size){
-                case 1:
-                    __atomic_store_n((uint8_t*)value, *(uint8_t*)&value_buf, __ATOMIC_SEQ_CST);
-                    break;
-    
-                case 2:
-                    __atomic_store_n((uint16_t*)value, *(uint16_t*)&value_buf, __ATOMIC_SEQ_CST);
-                    break;
-
-                case 4:
-                    __atomic_store_n((uint32_t*)value, *(uint32_t*)&value_buf, __ATOMIC_SEQ_CST);
-                    break;
-            
-                case 8:
-                    __atomic_store_n((uint64_t*)value, *(uint64_t*)&value_buf, __ATOMIC_SEQ_CST);
-                    break;
-            }
-
-            NEXT();
-        }
-
-        memcpy(value, &value_buf, field->size);
         NEXT();
     }
 
     // ========== METHOD INVOCATION ==========
     EJOPCODE_INVOKESPECIAL:{
-        thread_safepoint_check();
-
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_METHOD, err, JERR_TYPECHECK_FAILURE, exit);
-
-        Method_t* method = sym->value;
-        FAIL_SET_JUMP(!method->flags.is_abstract, err, JERR_ABSTRACT, exit);
+        Method_t* method = RESOLV_SYMBOL(sym);
 
         if (!method->flags.is_native) {
-            InterpreterFrame_t* new_frame = interpreter_frame_push(ctx, method);
+            InterpreterFrame_t* new_frame = interpreter_frame_push(thread, method);
             FAIL_SET_JUMP(new_frame, err, JERR_STACKOVERFLOW, exit);
-
-            FAIL_SET_JUMP(check_arguments(method, frame->shadow_stack, frame->sp - method->args_slots), err, JERR_TYPECHECK_FAILURE, exit);
-            if(method->flags.is_syncronized){
-                FAIL_SET_JUMP((err = monitor_enter((Object_t*)frame->stack[frame->sp - method->args_slots])) == JERR_OK, err, err, exit);
-            }
 
             int32_t* args = &frame->stack[frame->sp -= method->args_slots];
             memcpy(new_frame->locals, args, method->args_slots * sizeof(int32_t));
@@ -1333,30 +970,19 @@ Error_t interpreter_execute(Interpreter_t* ctx){
             frame = new_frame;
             goto *opcode_labels[*frame->pc];
         } else {
-            FAIL_SET_JUMP((err = native_method_invoke(ctx, frame, method)) == JERR_OK, err, err, exit);
+            FAIL_SET_JUMP((err = native_method_invoke(thread, frame, method)) == JERR_OK, err, err, exit);
             NEXT();
         }
     }
 
     EJOPCODE_INVOKESTATIC:{
-        thread_safepoint_check();
-
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_METHOD, err, JERR_TYPECHECK_FAILURE, exit);
-
-        Method_t* method = sym->value;
-        FAIL_SET_JUMP(!method->flags.is_abstract, err, JERR_ABSTRACT, exit);
-        FAIL_SET_JUMP((err = run_clinit(ctx, method->class)) == JERR_OK, err, err, exit);
+        Method_t* method = RESOLV_SYMBOL(sym);
+        RUN_CLINIT(method->class);
 
         if (!method->flags.is_native){
-            InterpreterFrame_t* new_frame = interpreter_frame_push(ctx, method);
+            InterpreterFrame_t* new_frame = interpreter_frame_push(thread, method);
             FAIL_SET_JUMP(new_frame, err, JERR_STACKOVERFLOW, exit);
-
-            FAIL_SET_JUMP(check_arguments(method, frame->shadow_stack, frame->sp - method->args_slots), err, JERR_TYPECHECK_FAILURE, exit);
-            if(method->flags.is_syncronized){
-                FAIL_SET_JUMP((err = monitor_enter((Object_t*)frame->stack[frame->sp - method->args_slots])) == JERR_OK, err, err, exit);
-            }
 
             int32_t* args = &frame->stack[frame->sp -= method->args_slots];
 
@@ -1365,64 +991,45 @@ Error_t interpreter_execute(Interpreter_t* ctx){
             frame = new_frame;
             goto *opcode_labels[*frame->pc];
         } else {
-            FAIL_SET_JUMP((err = native_method_invoke(ctx, frame, method)) == JERR_OK, err, err, exit);
+            FAIL_SET_JUMP((err = native_method_invoke(thread, frame, method)) == JERR_OK, err, err, exit);
             NEXT();
         }
     }
 
     EJOPCODE_INVOKEVIRTUAL:{
-        thread_safepoint_check();
-
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_METHOD, err, JERR_BADPARAM, exit);
-
-        Method_t* template = sym->value;
-        FAIL_SET_JUMP(check_arguments(template, frame->shadow_stack, frame->sp - template->args_slots), err, JERR_TYPECHECK_FAILURE, exit);
+        Method_t* template = RESOLV_SYMBOL(sym);
 
         Object_t* object = (Object_t*)frame->stack[frame->sp - template->args_slots];
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        Class_t* object_class = object->class;
-        FAIL_SET_JUMP(template->flags.is_virtual, err, JERR_TYPECHECK_FAILURE, exit);
-        FAIL_SET_JUMP(class_is_compatible(object_class, template->class), err, JERR_TYPECHECK_FAILURE, exit);
-
+        Class_t* object_class = OBJECT_CLASS(object);
         Method_t* method = object_class->vtable[template->vtable_index];
         FAIL_SET_JUMP(!method->flags.is_abstract, err, JERR_ABSTRACT, exit);
 
         if (!method->flags.is_native) {
-            InterpreterFrame_t* new_frame = interpreter_frame_push(ctx, method);
+            InterpreterFrame_t* new_frame = interpreter_frame_push(thread, method);
             FAIL_SET_JUMP(new_frame, err, JERR_STACKOVERFLOW, exit);
 
-            if(method->flags.is_syncronized){
-                FAIL_SET_JUMP((err = monitor_enter((Object_t*)frame->stack[frame->sp - method->args_slots])) == JERR_OK, err, err, exit);
-            }
-            
             int32_t* args = &frame->stack[frame->sp -= method->args_slots];
             memcpy(new_frame->locals, args, method->args_slots * sizeof(int32_t));
 
             frame = new_frame;
             goto *opcode_labels[*frame->pc];
         } else {
-            FAIL_SET_JUMP((err = native_method_invoke(ctx, frame, method)) == JERR_OK, err, err, exit);
+            FAIL_SET_JUMP((err = native_method_invoke(thread, frame, method)) == JERR_OK, err, err, exit);
             NEXT();
         }
     }
 
     EJOPCODE_INVOKEINTERFACE:{
-        thread_safepoint_check();
-
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_METHOD, err, JERR_BADPARAM, exit);
-
-        Method_t* template = sym->value;
-        FAIL_SET_JUMP(check_arguments(template, frame->shadow_stack, frame->sp - template->args_slots), err, JERR_TYPECHECK_FAILURE, exit);
+        Method_t* template = RESOLV_SYMBOL(sym);
 
         Object_t* object = (Object_t*)frame->stack[frame->sp - template->args_slots];
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        Class_t* object_class = object->class;
+        Class_t* object_class = OBJECT_CLASS(object);
         FAIL_SET_JUMP(!template->flags.is_static, err, JERR_TYPECHECK_FAILURE, exit);
 
         Method_t* method = NULL;
@@ -1441,13 +1048,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         FAIL_SET_JUMP(!method->flags.is_abstract, err, JERR_ABSTRACT, exit);
 
 
-        if (!method->flags.is_native) {
-            InterpreterFrame_t* new_frame = interpreter_frame_push(ctx, method);
+        if (!method->flags.is_native){
+            InterpreterFrame_t* new_frame = interpreter_frame_push(thread, method);
             FAIL_SET_JUMP(new_frame, err, JERR_STACKOVERFLOW, exit);
-
-            if(method->flags.is_syncronized){
-                FAIL_SET_JUMP((err = monitor_enter((Object_t*)frame->stack[frame->sp - method->args_slots])) == JERR_OK, err, err, exit);
-            }
 
             int32_t* args = &frame->stack[frame->sp -= method->args_slots];
             memcpy(new_frame->locals, args, method->args_slots * sizeof(int32_t));
@@ -1455,7 +1058,7 @@ Error_t interpreter_execute(Interpreter_t* ctx){
             frame = new_frame;
             goto *opcode_labels[*frame->pc];
         } else {
-            FAIL_SET_JUMP((err = native_method_invoke(ctx, frame, method)) == JERR_OK, err, err, exit);
+            FAIL_SET_JUMP((err = native_method_invoke(thread, frame, method)) == JERR_OK, err, err, exit);
             NEXT();
         }
     }
@@ -1464,7 +1067,6 @@ Error_t interpreter_execute(Interpreter_t* ctx){
 
     // ========== CONDITIONAL BRANCHES (int) ==========
     #define IF_CMP(OP) ({ \
-        thread_safepoint_check();\
         int32_t v2 = STACK_POP_INT(frame); \
         int32_t v1 = STACK_POP_INT(frame); \
         int16_t offset = *(int16_t*)(frame->pc + 1); \
@@ -1546,30 +1148,22 @@ Error_t interpreter_execute(Interpreter_t* ctx){
 
     // ========== GOTO & JSR ==========
     EJOPCODE_GOTO:{
-        thread_safepoint_check();
-
         frame->pc += *(int16_t*)(frame->pc + 1);
         goto *opcode_labels[*frame->pc];
     }
 
     EJOPCODE_GOTO_W:{
-        thread_safepoint_check();
-
         frame->pc += *(int32_t*)(frame->pc + 1);
         goto *opcode_labels[*frame->pc];
     }
 
     EJOPCODE_JSR:{
-        thread_safepoint_check();
-
         STACK_PUSH_INT(frame, (int32_t)(uintptr_t)(frame->pc + (1 + JOpcode_args_sizes[*frame->pc])));
         frame->pc += *(int16_t*)(frame->pc + 1);
         goto *opcode_labels[*frame->pc];
     }
 
     EJOPCODE_JSR_W:{
-        thread_safepoint_check();
-
         STACK_PUSH_INT(frame, (int32_t)(uintptr_t)(frame->pc + (1 + JOpcode_args_sizes[*frame->pc])));
         frame->pc += *(int32_t*)(frame->pc + 1);
         goto *opcode_labels[*frame->pc];
@@ -1596,7 +1190,7 @@ Error_t interpreter_execute(Interpreter_t* ctx){
 
     EJOPCODE_LDC:{
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint8_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
+        FAIL_JUMP((err = class_resolv_symbol( sym)) == JERR_OK, exit);
 
         switch(sym->type){
             default:
@@ -1607,12 +1201,14 @@ Error_t interpreter_execute(Interpreter_t* ctx){
             case SYMBOL_FLOAT:
             case SYMBOL_LONG:
             case SYMBOL_DOUBLE:
-            case SYMBOL_STRING:
                 STACK_PUSH_GENERIC(frame, sym_to_value_type[sym->type], sym->value);
+                break;
+            case SYMBOL_STRING:
+                STACK_PUSH_REF(frame, sym->value);
                 break;
 
             case SYMBOL_CLASS:
-                STACK_PUSH_REF(frame, ((Class_t*)sym->value)->class_object);
+                STACK_PUSH_REF(frame, JeNIHANDLE_OBJECT(((Class_t*)sym->value)->class_object));
                 break;
         }
 
@@ -1622,7 +1218,7 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     EJOPCODE_LDC2_W:
     EJOPCODE_LDC_W:{
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
+        FAIL_JUMP((err = class_resolv_symbol( sym)) == JERR_OK, exit);
 
         switch(sym->type){
             default:
@@ -1633,12 +1229,14 @@ Error_t interpreter_execute(Interpreter_t* ctx){
             case SYMBOL_FLOAT:
             case SYMBOL_LONG:
             case SYMBOL_DOUBLE:
-            case SYMBOL_STRING:
                 STACK_PUSH_GENERIC(frame, sym_to_value_type[sym->type], sym->value);
+                break;
+            case SYMBOL_STRING:
+                STACK_PUSH_REF(frame, sym->value);
                 break;
 
             case SYMBOL_CLASS:
-                STACK_PUSH_REF(frame, ((Class_t*)sym->value)->class_object);
+                STACK_PUSH_REF(frame, JeNIHANDLE_OBJECT(((Class_t*)sym->value)->class_object));
                 break;
         }
 
@@ -1646,46 +1244,39 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     }
 
     EJOPCODE_NEW:{
-        thread_safepoint_check();
-
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_CLASS, err, JERR_BADPARAM, exit);
-
-        Class_t* class = sym->value;
-        FAIL_SET_JUMP((err = run_clinit(ctx, class)) == JERR_OK, err, err, exit);
+        Class_t* class = RESOLV_SYMBOL(sym);
+        RUN_CLINIT(class);
 
         FAIL_SET_JUMP(!class->flags.is_abstract, err, JERR_INSTANTIATION, exit);
 
-        Object_t* object = 0;
-        FAIL_SET_JUMP((err = heap_class_object_alloc(class, &object)) == JERR_OK, err, err, exit); 
+        Object_t* object = NULL;
+        FAIL_SET_JUMP((object = heap_alloc_object(class)), err, JERR_OOM, exit);
 
         STACK_PUSH_REF(frame, object);
         NEXT();
     }
 
     EJOPCODE_NEWARRAY:{
-        thread_safepoint_check();
-
         uint8_t type = *(uint8_t*)(frame->pc + 1);
         int32_t length = STACK_POP_INT(frame);
 
         FAIL_SET_JUMP(length >= 0, err, JERR_NEGATIVESIZE, exit);
 
-        JavaValueType_t type_mapping[] = {[4] = TYPE_BOOL,
-                                          [5] = TYPE_CHAR,
-                                          [6] = TYPE_FLOAT,
-                                          [7] = TYPE_DOUBLE,
-                                          [8] = TYPE_BYTE,
-                                          [9] = TYPE_SHORT,
-                                          [10] = TYPE_INT,
-                                          [11] = TYPE_LONG,};
+        char type_mapping[] = {[4] = 'Z',
+                                          [5] = 'C',
+                                          [6] = 'F',
+                                          [7] = 'D',
+                                          [8] = 'B',
+                                          [9] = 'S',
+                                          [10] = 'I',
+                                          [11] = 'J',};
 
         Object_t* array = NULL;
         Class_t* array_class = NULL;
         char class_name[3] = {'[',type_mapping[type],'\0'};
         FAIL_SET_JUMP((err = class_load_bynameid(stringpool_add(class_name), &array_class)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_alloc(array_class, length, &array)) == JERR_OK, err, err, exit);
+        FAIL_SET_JUMP((array = heap_alloc_array(array_class, length)), err, JERR_OOM, exit);
 
         STACK_PUSH_REF(frame, array);
 
@@ -1693,13 +1284,8 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     }
 
     EJOPCODE_ANEWARRAY:{
-        thread_safepoint_check();
-
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_CLASS, err, JERR_BADPARAM, exit);
-
-        Class_t* element_class = sym->value;
+        Class_t* element_class = RESOLV_SYMBOL(sym);
         int32_t length = STACK_POP_INT(frame);
 
         FAIL_SET_JUMP(length >= 0, err, JERR_NEGATIVESIZE, exit);
@@ -1719,21 +1305,116 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         Class_t* array_class = NULL;
         Object_t* array = NULL;
         FAIL_SET_JUMP((err = class_load_bynameid(stringpool_add(array_class_name), &array_class)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_alloc(array_class, length, &array)) == JERR_OK, err, err, exit);
+        FAIL_SET_JUMP((array = heap_alloc_array(array_class, length)), err, JERR_OOM, exit);
 
         STACK_PUSH_REF(frame, array);
 
         NEXT();
     }
 
+    //=============== THIS OPCODE HANDLER IS VIBECODED FULLY, IF THERE IS BUGS IN IT I WILL REWRITE OR FIX IT =========
+    EJOPCODE_MULTIANEWARRAY:{
+        ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
+        Class_t* array_class = RESOLV_SYMBOL(sym);
+        uint8_t dims_count = *(uint8_t*)(frame->pc + 3);
+
+        FAIL_SET_JUMP(dims_count >= 1, err, JERR_TYPECHECK_FAILURE, exit);
+        FAIL_SET_JUMP(dims_count <= 8, err, JERR_TYPECHECK_FAILURE, exit);
+
+        /* Pop sizes. dims[0] is outermost, dims[dims_count-1] is innermost. */
+        int32_t dims[8];
+        for(int i = dims_count - 1; i >= 0; i--){
+            dims[i] = STACK_POP_INT(frame);
+            FAIL_SET_JUMP(dims[i] >= 0, err, JERR_NEGATIVESIZE, exit);
+        }
+
+        /*
+        * Reserve dims_count Java operand-stack slots. Slot k holds the
+        * currently-being-filled array at level k. These are the ONLY roots
+        * for intermediate arrays — every C var below is transient and gets
+        * re-read from the stack after any allocation that might GC.
+        */
+        uint32_t base = frame->sp;
+        for(uint8_t i = 0; i < dims_count; i++)
+            STACK_PUSH_REF(frame, NULL);
+
+        /* Level 0 array. */
+        Object_t* tmp = heap_alloc_array(array_class, (size_t)dims[0]);
+        FAIL_SET_JUMP(tmp, err, JERR_OOM, multidim_cleanup);
+        frame->stack[base + 0] = (int32_t)(uintptr_t)tmp;
+
+        /* Per-level metadata. C arrays — GC doesn't care. */
+        uint32_t next_slot[8] = {0};
+        Class_t* level_classes[8];
+        level_classes[0] = array_class;
+
+        uint8_t level = 0;
+
+        while(level < dims_count){
+            /* Done filling this level — leaf, or all slots filled. */
+            if(level == dims_count - 1 || next_slot[level] >= (uint32_t)dims[level]){
+                if(level == 0) break;
+                level--;
+                next_slot[level]++;
+                continue;
+            }
+
+            /* Component class for THIS level — read from the per-level array. */
+            char* cls_name = stringpool_get(level_classes[level]->name_id);
+            FAIL_SET_JUMP(cls_name && cls_name[0] == '[', err, JERR_TYPECHECK_FAILURE, multidim_cleanup);
+
+            int comp_id = stringpool_add(cls_name + 1);
+            FAIL_SET_JUMP(comp_id >= 0, err, JERR_OOM, multidim_cleanup);
+
+            Class_t* comp_cls = NULL;
+            FAIL_JUMP((err = class_load_bynameid((uint16_t)comp_id, &comp_cls)) == JERR_OK,
+                    multidim_cleanup);
+
+            /*
+            * Allocate one child at level+1. Everything we need before this call
+            * is either on the Java stack (parent arrays) or in C vars that are
+            * never used after this point without a re-read.
+            */
+            Object_t* child = heap_alloc_array(comp_cls, (size_t)dims[level + 1]);
+            FAIL_SET_JUMP(child, err, JERR_OOM, multidim_cleanup);
+
+            /*
+            * Store child into parent's slot. Parent must be re-read from the
+            * Java stack — the allocation above may have moved it.
+            */
+            Object_t* parent = (Object_t*)(uintptr_t)frame->stack[base + level];
+            OBJECT_ARRAY_ELEMENTS(parent, Object_t*)[next_slot[level]] = child;
+
+            /* Descend. Set the class for the next level explicitly. */
+            level_classes[level + 1] = comp_cls;
+            frame->stack[base + level + 1] = (int32_t)(uintptr_t)child;
+            next_slot[level + 1] = 0;
+            level++;
+        }
+
+        /* Result lives at slot 0. Push it before unwinding our temp slots. */
+        Object_t* result = (Object_t*)(uintptr_t)frame->stack[base + 0];
+
+        frame->sp = base;
+        for(uint8_t i = 0; i < dims_count; i++)
+            SHADOW_CLEAR_REF(frame->shadow_stack, base + i);
+
+        STACK_PUSH_REF(frame, result);
+        NEXT();
+
+    multidim_cleanup:
+        frame->sp = base;
+        for(uint8_t i = 0; i < dims_count; i++)
+            SHADOW_CLEAR_REF(frame->shadow_stack, base + i);
+        goto exit;
+    }
+    //===========================================================================
+
     EJOPCODE_ARRAYLENGTH:{
-        int32_t length = 0;
         Object_t* object = STACK_POP_REF(frame);
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-        
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
 
-        STACK_PUSH_INT(frame, length);
+        STACK_PUSH_INT(frame, OBJECT_ARRAY_LENGTH(object));
         NEXT();
     }
 
@@ -1741,15 +1422,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        int32_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_INT(frame, array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_INT(frame, OBJECT_ARRAY_ELEMENTS(object, int32_t)[index]);
 
         NEXT();
     }
@@ -1758,15 +1433,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        int64_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_LONG(frame, array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_LONG(frame, OBJECT_ARRAY_ELEMENTS(object, int64_t)[index]);
 
         NEXT();
     }
@@ -1775,15 +1444,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        float* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_FLOAT(frame, array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_FLOAT(frame, OBJECT_ARRAY_ELEMENTS(object, float)[index]);
 
         NEXT();
     }
@@ -1792,15 +1455,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        double* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_DOUBLE(frame, array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_DOUBLE(frame, OBJECT_ARRAY_ELEMENTS(object, double)[index]);
 
         NEXT();
     }
@@ -1809,15 +1466,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        Object_t** array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_REF(frame, array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_REF(frame, OBJECT_ARRAY_ELEMENTS(object, Object_t*)[index]);
 
         NEXT();
     }
@@ -1826,15 +1477,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        int8_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_INT(frame, (int32_t)array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_INT(frame, (int32_t)OBJECT_ARRAY_ELEMENTS(object, int8_t)[index]);
 
         NEXT();
     }
@@ -1843,15 +1488,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        uint16_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_INT(frame, (int32_t)array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_INT(frame, (int32_t)OBJECT_ARRAY_ELEMENTS(object, int16_t)[index]);
 
         NEXT();
     }
@@ -1860,15 +1499,9 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         int32_t index = STACK_POP_INT(frame);
         Object_t* object = STACK_POP_REF(frame);
 
-        int16_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
-
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        STACK_PUSH_INT(frame, (int32_t)array[index]);
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        STACK_PUSH_INT(frame, (int32_t)OBJECT_ARRAY_ELEMENTS(object, int16_t)[index]);
 
         NEXT();
     }
@@ -1876,17 +1509,12 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     EJOPCODE_IASTORE:{
         int32_t value = STACK_POP_INT(frame);
         int32_t index = STACK_POP_INT(frame);
-        Object_t* object = STACK_POP_REF(frame);
 
-        int32_t* array = NULL;
-        int32_t length = 0;
+        Object_t* object = STACK_POP_REF(frame);
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, int32_t)[index] = value;
 
         NEXT();
     }
@@ -1894,17 +1522,12 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     EJOPCODE_FASTORE:{
         float value = STACK_POP_FLOAT(frame);
         int32_t index = STACK_POP_INT(frame);
+        
         Object_t* object = STACK_POP_REF(frame);
-
-        float* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, float)[index] = value;
 
         NEXT();
     }
@@ -1912,17 +1535,12 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     EJOPCODE_LASTORE:{
         int64_t value = STACK_POP_LONG(frame);
         int32_t index = STACK_POP_INT(frame);
+        
         Object_t* object = STACK_POP_REF(frame);
-
-        int64_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, int64_t)[index] = value;
 
         NEXT();
     }
@@ -1930,70 +1548,50 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     EJOPCODE_DASTORE:{
         double value = STACK_POP_DOUBLE(frame);
         int32_t index = STACK_POP_INT(frame);
+        
         Object_t* object = STACK_POP_REF(frame);
-
-        double* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, double)[index] = value;
 
         NEXT();
     }
 
     EJOPCODE_BASTORE:{
-        int8_t value = STACK_POP_INT(frame);
+        int32_t value = STACK_POP_INT(frame);
         int32_t index = STACK_POP_INT(frame);
+        
         Object_t* object = STACK_POP_REF(frame);
-
-        int8_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, int8_t)[index] = (int8_t)value;
 
         NEXT();
     }
     
     EJOPCODE_SASTORE:{
-        int16_t value = STACK_POP_INT(frame);
+        int32_t value = STACK_POP_INT(frame);
         int32_t index = STACK_POP_INT(frame);
+        
         Object_t* object = STACK_POP_REF(frame);
-
-        int16_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, int16_t)[index] = (int16_t)value;
 
         NEXT();
     }
     EJOPCODE_CASTORE:{
-        uint16_t value = STACK_POP_INT(frame);
+        int32_t value = STACK_POP_INT(frame);
         int32_t index = STACK_POP_INT(frame);
+        
         Object_t* object = STACK_POP_REF(frame);
-
-        uint16_t* array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, int16_t)[index] = (int16_t)value;
 
         NEXT();
     }
@@ -2001,17 +1599,12 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     EJOPCODE_AASTORE:{
         Object_t* value = STACK_POP_REF(frame);
         int32_t index = STACK_POP_INT(frame);
+        
         Object_t* object = STACK_POP_REF(frame);
-
-        Object_t** array = NULL;
-        int32_t length = 0;
         FAIL_SET_JUMP(object, err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP((err = heap_array_object_get_length(object, &length)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP((err = heap_array_object_get_elements(object, (void**)&array)) == JERR_OK, err, err, exit);
-    
-        FAIL_SET_JUMP(index < length, err, JERR_INDEXOOB, exit);
-        array[index] = value;
+        FAIL_SET_JUMP(index < OBJECT_ARRAY_LENGTH(object), err, JERR_INDEXOOB, exit);
+        OBJECT_ARRAY_ELEMENTS(object, Object_t*)[index] = value;
 
         NEXT();
     }
@@ -2039,30 +1632,29 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     }
 
     EJOPCODE_MONITORENTER:{
+        assert(0);
+
         FAIL_SET_JUMP(SHADOW_GET_REF(frame->shadow_stack, frame->sp - 1), err, JERR_TYPECHECK_FAILURE, exit);
-        FAIL_SET_JUMP((err = monitor_enter((Object_t*)frame->stack[frame->sp - 1])) == JERR_OK, err, err, exit);
        
         frame->sp--;
         NEXT();
     }
 
     EJOPCODE_MONITOREXIT:{
+        assert(0);
+
         FAIL_SET_JUMP(SHADOW_GET_REF(frame->shadow_stack, frame->sp - 1), err, JERR_TYPECHECK_FAILURE, exit);
         FAIL_SET_JUMP((Object_t*)frame->stack[frame->sp - 1], err, JERR_NULLPOINTER, exit);
 
-        FAIL_SET_JUMP(((err = monitor_exit(((Object_t*)frame->stack[frame->sp - 1])->monitor)) == JERR_OK), err, err, exit);
-       
         frame->sp--;
         NEXT();
     }
 
     EJOPCODE_INSTANCEOF:{
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_CLASS, err, JERR_BADPARAM, exit);
 
         Object_t* object = STACK_POP_REF(frame);
-        if(!object || (object && !class_is_compatible(object->class, sym->value))) STACK_PUSH_INT(frame, 0);
+        if(!object || (object && !class_is_compatible(OBJECT_CLASS(object), RESOLV_SYMBOL(sym)))) STACK_PUSH_INT(frame, 0);
         else STACK_PUSH_INT(frame, 1);
 
         NEXT();
@@ -2070,21 +1662,16 @@ Error_t interpreter_execute(Interpreter_t* ctx){
 
     EJOPCODE_CHECKCAST:{
         ClassSymbol_t* sym = &frame->method->class->symtab.symbols[*(uint16_t*)(frame->pc + 1)];
-        FAIL_SET_JUMP((err = class_resolv_symbol(ctx, sym)) == JERR_OK, err, err, exit);
-        FAIL_SET_JUMP(sym->type == SYMBOL_CLASS, err, JERR_BADPARAM, exit);
         
         Object_t* object = STACK_POP_REF(frame);
-        FAIL_SET_JUMP(object && class_is_compatible(object->class, sym->value), err, JERR_CAST, exit);
+        FAIL_SET_JUMP(object && class_is_compatible(OBJECT_CLASS(object), RESOLV_SYMBOL(sym)), err, JERR_CAST, exit);
         STACK_PUSH_REF(frame, object);
 
         NEXT();
     }
 
     EJOPCODE_ATHROW:{
-        thread_safepoint_check();
-        err = frame->stack[frame->sp - 1] ? JERR_EXCEPTION : JERR_NULLPOINTER;
-
-        goto exit;
+        THROW_EXCEPTION(STACK_POP_REF(frame));
     }
 
     EJOPCODE_NOP:
@@ -2476,8 +2063,6 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     }
 
     EJOPCODE_IF_ACMPEQ:{
-        thread_safepoint_check();
-
         void* ref2 = STACK_POP_REF(frame);
         void* ref1 = STACK_POP_REF(frame);
         int16_t offset = *(int16_t*)(frame->pc + 1);
@@ -2489,8 +2074,6 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     }
 
     EJOPCODE_IF_ACMPNE:{
-        thread_safepoint_check();
-
         void* ref2 = STACK_POP_REF(frame);
         void* ref1 = STACK_POP_REF(frame);
         int16_t offset = *(int16_t*)(frame->pc + 1);
@@ -2502,7 +2085,6 @@ Error_t interpreter_execute(Interpreter_t* ctx){
     }
 
     #define IF_ZERO(OP) ({ \
-        thread_safepoint_check();\
         int32_t v = STACK_POP_INT(frame); \
         int16_t offset = *(int16_t*)(frame->pc + 1); \
         if (v OP 0) { \
@@ -2534,24 +2116,19 @@ Error_t interpreter_execute(Interpreter_t* ctx){
         return err;
 
 exit:
-    if(err >= JERR_NOCLASSDEF && err < JERR_UNKNOWN && err != JERR_OOM){
-        Object_t* exception = err == JERR_EXCEPTION ? STACK_POP_REF(frame) : NULL;
+    if(err >= JERR_NOCLASSDEF && err < JERR_UNKNOWN){
+        Object_t* exception = err == JERR_EXCEPTION ? JeNIHANDLE_OBJECT(thread->pending_exception) : NULL;
+
         if(!exception){
+            assert(0 && "TODO: Implement error code to exception handling properly!");
             Class_t* exception_class = NULL;
-            FAIL_SET_JUMP((err = class_load_bynameid(error_to_exception_nameid(err), &exception_class)) == JERR_OK, err, err, exit); //Oh, this is cursed
-            FAIL_SET_JUMP((err = heap_class_object_alloc(exception_class, &exception)) == JERR_OK, err, err, exit);
-            FAIL_SET_JUMP((err = interpreter_method_invoke(ctx, class_find_method(exception_class, stringpool_add("<init>@()V")), NULL, NULL)) == JERR_OK, err, err, exit);            
+            FAIL_SET_JUMP((err = class_load_bynameid(error_to_exception_nameid(err), &exception_class)) == JERR_OK, err, err, fatal); //Oh, this is cursed
+            //FAIL_SET_JUMP((err = heap_class_object_alloc(exception_class, &exception)) == JERR_OK, err, err, fatal);
         }
 
-        FAIL_SET_JUMP((err = throw_exception(ctx, exception)) == JERR_OK, err, err, exit);
-        frame = interpreter_frame_get(ctx);
-
-        goto *opcode_labels[*frame->pc];
+        THROW_EXCEPTION(exception);
     }
 
-    //Unlock all monitors in case of diyng
-    for(InterpreterFrame_t* cur = frame; cur; cur = cur->prev){
-        frame_unlock_monitors(cur);
-    }
+fatal:
     return err;
 }

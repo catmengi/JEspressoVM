@@ -1,3 +1,22 @@
+/*
+JEspressoVM - project to bring java bytecode execution to esp32 (and others)
+
+Copyright (C) 2026  Vladislav Potrashkov
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package java.io;
 
 public class PrintStream extends OutputStream{
@@ -40,13 +59,13 @@ public class PrintStream extends OutputStream{
         }
     }
 
-    public void println() {}
-    public void println(boolean x) {}
-    public void println(char x) {}
-    public void println(char[] x) {}
-    public void println(int x) {}
-    public void println(long x) {}
-    public void println(Object x) {}
-    public void println(String x) {}
+    public void println() {print("\n");}
+    public void println(boolean b) {print(String.valueOf(b).concat("\n"));}
+    public void println(char c) {print(String.valueOf(c).concat("\n"));}
+    public void println(char[] s) {print(String.valueOf(s).concat("\n"));}
+    public void println(int i) {print(String.valueOf(i).concat("\n"));}
+    public void println(long l) {print(String.valueOf(l).concat("\n"));}
+    public void println(Object obj) {print(obj.toString().concat("\n"));}
+    public void println(String s) {print(s.concat("\n"));}
     protected void setError() {}
 }

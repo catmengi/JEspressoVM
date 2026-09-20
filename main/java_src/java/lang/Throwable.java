@@ -17,9 +17,24 @@ You should have received a copy of the GNU General Public License
 along with this program; If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "monitor.h"
-#include "heap.h"
-#include "jerror.h"
-#include "thread.h"
+package java.lang;
 
-#include <assert.h>
+public class Throwable {
+    String message = null;
+    
+    public Throwable(){
+
+    }
+
+    public Throwable(String message){
+        this.message = message;
+    }
+
+    public String getMessage(){
+        return this.message;
+    }
+
+    public String toString(){
+        return "Throwable".concat(":").concat(message != null ? message : "");
+    }
+}

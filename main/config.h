@@ -40,7 +40,7 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 #define VM_PARSER_ARENA_ID 1984
 
 #define THREAD_STACK_SIZE 8 KB
-#define THREAD_LOWEST_QUOTA 64
+#define THREAD_LOWEST_QUOTA 128
 #define THREAD_DEFAULT_PRIORITY 5
 
 void JEspresso_init();

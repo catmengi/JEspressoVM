@@ -66,7 +66,7 @@ static void* Cparse_utf8(ClassStream_t* stream){
     utf8_constant->string = bumper_alloc(s_arena,utf8_constant->length + 1);
     FAIL_SET_JUMP(utf8_constant->string,ret,NULL,exit);
 
-    FAIL_SET_JUMP(classstream_readBUF(stream,utf8_constant->string,utf8_constant->length) == 0,ret,NULL,exit);
+    FAIL_SET_JUMP(utf8_constant->length == 0 || classstream_readBUF(stream,utf8_constant->string,utf8_constant->length) == 0,ret,NULL,exit);
     utf8_constant->string[utf8_constant->length] = '\0'; //Null terminating it
 
     ret = utf8_constant;

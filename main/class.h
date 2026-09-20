@@ -21,6 +21,7 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "heap.h"
 #include "list.h"
 #include "jerror.h"
 #include "monitor.h"
@@ -29,18 +30,18 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 #define MAX_LOADED_CLASSES 1024
 typedef struct Class_t Class_t;
 
-typedef enum{
-    TYPE_BYTE = 'B',
-    TYPE_CHAR = 'C',
-    TYPE_DOUBLE = 'D',
-    TYPE_FLOAT = 'F',
-    TYPE_INT = 'I',
-    TYPE_LONG = 'J',
-    TYPE_SHORT = 'S',
-    TYPE_BOOL = 'Z',
-    TYPE_VOID = 'V',
-    TYPE_REFERENCE = 'L',
-}JavaValueType_t;
+typedef enum ValueType_t{
+    TYPE_VOID,
+    TYPE_BYTE,
+    TYPE_CHAR,
+    TYPE_DOUBLE,
+    TYPE_FLOAT,
+    TYPE_INT,
+    TYPE_LONG,
+    TYPE_SHORT,
+    TYPE_BOOL,
+    TYPE_REF,
+}ValueType_t;
 
 typedef enum{
     SYMBOL_NONE,
@@ -70,7 +71,6 @@ typedef struct{
 }ConstantPoolPatchSymbol_t;
 
 typedef struct{
-    atomic_flag spinlock; 
     SymbolType_t type;
     void* value;
 }ClassSymbol_t;
@@ -87,7 +87,7 @@ typedef struct{
 
 typedef struct Field_t{
     uint16_t name_id;
-    JavaValueType_t type; //Still store type separately for faster opcodes on resolved fields
+    ValueType_t type; //Still store type separately for faster opcodes on resolved fields
     size_t offset; //offset in bytes
     size_t size; //size in bytes
     
@@ -135,7 +135,7 @@ typedef struct Method_t{
         };
     }flags; 
 
-    JavaValueType_t return_type;
+    ValueType_t return_type;
 
     unsigned args_slots; //SP offset
     unsigned args_bitmap_size; //GC bitmap
@@ -233,13 +233,11 @@ typedef struct Class_t{
     Class_t* parent;
     ImplementsTable_t implements;
     ClassSymbolTable_t symtab;
-    Object_t* class_object; //java.lang.Class instance
+    ObjectJeNIHandle_t class_object; //java.lang.Class instance
 
-    _Atomic(Thread_t*) clinit_trigger; //Thread that triggered clinit
-    atomic_int clinit_stage; //0 - not started, 1 - in progress, 2 - done
-    atomic_int link_stage; //TODO: refactor current linker and use it instead of a flag!
-                                //0 - not started, 1 - in progress, 2 - done
-
+    Thread_t* clinit_trigger; //Thread that triggered clinit
+    int clinit_stage; //0 - not started, 1 - in progress, 2 - done
+    struct list_head clinit_waiters;
     struct{
         union{
             uint32_t flags;
@@ -253,7 +251,7 @@ typedef struct Class_t{
             };
         };
     }flags;
-    JavaValueType_t array_type; //Only usable if is_array == 1, other wise TYPE_VOID
+    ValueType_t array_type; //Only usable if is_array == 1, other wise TYPE_VOID
 
     //Fields info
     //Separated to simplify GC scan logic.
@@ -265,6 +263,7 @@ typedef struct Class_t{
     //Method info
     //TODO: methods structure
     MethodTable_t methods;
+    Method_t* clinit;
 
     size_t vtable_size;
     Method_t** vtable;
@@ -272,11 +271,12 @@ typedef struct Class_t{
 
 void classes_init(); //Not to be called by user!
 
-Error_t class_resolv_symbol(Interpreter_t* ctx, ClassSymbol_t* symbol);
+Error_t class_resolv_symbol(ClassSymbol_t* symbol);
 Error_t class_load_bynameid(uint16_t name_id, Class_t** out);
 
 Method_t* class_find_method(Class_t* class, uint16_t name_id);
 bool class_is_compatible(Class_t* class, Class_t* compatible_to);
 bool class_is_subclass(Class_t* is_subclass, Class_t* to);
 
+Field_t* class_find_field_cstr(Class_t* class, char* name);
 Field_t* class_find_field(Class_t* class, uint16_t name_id);

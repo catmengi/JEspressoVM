@@ -10,27 +10,37 @@ interface debug extends debug_b{
 }
 
 class implementation implements debug{
-    public int debug_a(){
+    synchronized public int debug_a(){
         System.out.print("debug_a WORKS!\n");
         return 0;
     }
 
-    public int debug_bb(){
+    synchronized public int debug_bb(){
         System.out.print("debug_bb WORKS TOO\n");
         return 0;
     }
 }
 
 class implextend extends implementation{
-    public int debug_a(){
+    synchronized public int debug_a(){
         System.out.print("debug_a extended WORKS!\n");
         return 0;
     }
 
-    public int debug_bb(){
+    synchronized public int debug_bb(){
         System.out.print("debug_bb extended WORKS TOO\n");
         return 0;
     }    
+}
+
+class debug_exception extends java.lang.Throwable{
+    debug_exception() {
+        super();
+    }
+
+    debug_exception(String s){
+        super(s);
+    }
 }
 
 public class JEspressoTest{
@@ -51,7 +61,7 @@ public class JEspressoTest{
         */
     };
 
-    public static void debug() throws IOException{
+    synchronized public static void debug() throws debug_exception{
 
         String s = "Проверка UTF8, everything is in check!\n";
 
@@ -69,11 +79,18 @@ public class JEspressoTest{
         ext_b.debug_bb();
 
         System.out.print(s);
+
+        throw new debug_exception("fuck you");
     }
 
     public static void main(String args[]){
         try{
             debug();
-        } catch (Exception e){}
+        } catch (debug_exception t){
+            System.out.println(t.toString());
+        }
+
+        System.out.println(deepseek_dhrystone.run());
     }
+
 }

@@ -10,10 +10,6 @@
 
 static bump_allocator_t* s_arena = NULL;
 static struct list_head s_entry_list = {0};
-static atomic_flag s_spinlock = ATOMIC_FLAG_INIT;
-
-#define CLASSTABLE_CRITICAL_ENTER() ({while(atomic_flag_test_and_set(&s_spinlock)){}})
-#define CLASSTABLE_CRITICAL_EXIT() atomic_flag_clear(&s_spinlock)
 
 /* MurmurHash2, by Austin Appleby
 // Note - This code makes a few assumptions about how your machine behaves -
@@ -82,8 +78,6 @@ void classtable_init(){
     assert((s_arena = memman_get(VM_PERMA_ARENA_ID)));
     INIT_LIST_HEAD(&s_entry_list);
 
-    s_spinlock = (atomic_flag)ATOMIC_FLAG_INIT;
-
     assert(insert_entry()); //Add initial entry (other wise it wouldnt work)
 }
 
@@ -127,7 +121,6 @@ static Class_t** find_slot(ClasstableEntry_t* entry, int32_t name_id){
 }
 
 Error_t classtable_put(Class_t* class){
-    CLASSTABLE_CRITICAL_ENTER();
     Error_t err = JERR_OK;
 
     ClasstableEntry_t *entry = NULL;
@@ -150,12 +143,10 @@ Error_t classtable_put(Class_t* class){
     *slot = class;
 
 exit:
-    CLASSTABLE_CRITICAL_EXIT();
     return err;
 }
 
 Class_t* classtable_get(int32_t name_id){
-    CLASSTABLE_CRITICAL_ENTER();
     Class_t* found = NULL;
 
     ClasstableEntry_t* entry = NULL;
@@ -165,7 +156,6 @@ Class_t* classtable_get(int32_t name_id){
     }
 
 exit:
-    CLASSTABLE_CRITICAL_EXIT();
     return found;
 }
 

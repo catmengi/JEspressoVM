@@ -21,17 +21,15 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 
 #include "interpreter.h"
 #include "jerror.h"
-#include "thread.h"
+#include "interpreter.h"
 #include <stdint.h>
-
-//Either NULL, int32_t or int64_t
 
 typedef struct{
     Error_t err; 
     char value[sizeof(int64_t)]; //Used in case when err == JERR_OK / JERR_EXCEPTION
 }NativeMethodReturnValue_t;
 
-typedef NativeMethodReturnValue_t (*NativeMethod_t)(Interpreter_t* ctx, Method_t* self, int32_t* args);
+typedef NativeMethodReturnValue_t (*NativeMethod_t)(Thread_t* ctx, Method_t* self, int32_t* args);
 
 typedef struct{
     char* name; //In mangled form: name@()V for example 

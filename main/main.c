@@ -18,6 +18,7 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "config.h"
+#include "heap.h"
 #include "interpreter.h"
 #include "stringpool.h"
 #include "class.h"
@@ -25,7 +26,13 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 
 #include <assert.h>
 #include "loader.h"
+#include <time.h>
 
+static uint64_t now_us(void){
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
+}
 
 int app_main(){
     JEspresso_init();
@@ -33,15 +40,31 @@ int app_main(){
     loader_set_apppath("java_src");
     loader_set_systempath("java_src");
 
+    uint64_t t0 = now_us();
+
     Class_t* main_class = NULL;
     assert(class_load_bynameid(stringpool_add("JEspressoTest"), &main_class) == JERR_OK);
 
-    Method_t* main = class_find_method(main_class, stringpool_add("debug@()V"));
+    Method_t* main = class_find_method(main_class, stringpool_add("main@([Ljava/lang/String;)V"));
     assert(main);
 
-    thread_start_exec(thread_alloc(NULL), main, NULL);
+    thread_run(NULL, main, (int32_t[]){0});
+    //thread_run(NULL, main, (int32_t[]){0});
+    //thread_run(NULL, main, (int32_t[]){0});
+    //thread_run(NULL, main, (int32_t[]){0});
 
-    pthread_exit(NULL);
+    uint64_t t1 = now_us();
+    assert(thread_schedule() == JERR_OK);
+    uint64_t t2 = now_us();
+
+    printf("\n");
+    printf("load:     %8llu us\n", (unsigned long long)(t1 - t0));
+    printf("execute:  %8llu us  (%.3f ms)\n",
+           (unsigned long long)(t2 - t1),
+           (double)(t2 - t1) / 1000.0);
+    printf("total:    %8llu us\n", (unsigned long long)(t2 - t0));
+    printf("\n");
+
     return 0;
 }
 
